@@ -36,7 +36,7 @@ private struct MenuBarLabel: View {
 
     var body: some View {
         Image(systemName: isRecording ? "waveform.circle.fill" : "sparkles")
-            .accessibilityLabel(isRecording ? "Siri+ слушает созвон" : "Siri+")
+            .accessibilityLabel(isRecording ? String(localized: "Siri+ is listening to the meeting") : "Siri+")
             .onAppear {
                 // The label lives as long as the app, so the shortcut can always open the window.
                 overlay.openMainWindow = { openWindow(id: "assistant") }
@@ -51,36 +51,40 @@ private struct AssistantMenu: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("Спросить (⌃⌥Пробел)") { overlay.show() }
-        Button("Открыть Siri+") { showWindow() }
-        Button("Новый диалог") {
+        Button("Ask (⌃⌥Space)") { overlay.show() }
+        Button("Open Siri+") { showWindow() }
+        Button("New Conversation") {
             model.newConversation()
             showWindow()
         }
         Divider()
         switch meeting.phase {
         case .idle:
-            Button("Начать созвон") {
+            Button("Start Meeting") {
                 model.selectedTab = .meeting
                 showWindow()
                 meeting.refreshSources()
                 Task { await meeting.start() }
             }
         case .starting:
-            Text("Готовлю распознавание…")
+            Text("Preparing speech recognition…")
         case .running:
-            Button("Подсказать сейчас (⌃⌥Пробел)") { meeting.askNow() }
-            Button("Показать панель подсказок") { overlay.show() }
-            Button("Остановить созвон") { Task { await meeting.stop() } }
+            Button("Hint Now (⌃⌥Space)") { meeting.askNow() }
+            Button("Show Hint Panel") { overlay.show() }
+            Button("Stop Meeting") { Task { await meeting.stop() } }
         }
         Divider()
-        Text(model.hasAPIKey ? "Claude подключён" : "Нужен ключ Claude API")
-        Button("Настройки") {
+        if model.isModelReady {
+            Text("\(model.preferences.provider.title) connected")
+        } else {
+            Text("Sign-in required")
+        }
+        Button("Settings…") {
             model.selectedTab = .settings
             showWindow()
         }
         Divider()
-        Button("Завершить Siri+") { NSApplication.shared.terminate(nil) }
+        Button("Quit Siri+") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 

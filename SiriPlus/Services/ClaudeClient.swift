@@ -10,19 +10,19 @@ enum ClaudeError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            "Добавьте ключ Claude API в Настройках."
+            String(localized: "Add an API key in Settings.")
         case .http(401, _):
-            "Ключ Claude API не принят. Проверьте его в Настройках."
+            String(localized: "The API key was not accepted. Check it in Settings.")
         case .http(429, _):
-            "Превышен лимит запросов к Claude API. Подождите немного."
+            String(localized: "Too many requests or the usage limit is reached. Wait a little.")
         case .http(let status, let message):
-            "Claude API вернул ошибку \(status): \(message)"
+            String(localized: "The service returned error \(status): \(message)")
         case .api(let type, let message):
-            "Claude API: \(message) (\(type))"
+            "\(message) (\(type))"
         case .refused:
-            "Модель отказалась отвечать на этот запрос."
+            String(localized: "The model declined to answer this request.")
         case .invalidResponse:
-            "Не удалось прочитать ответ Claude API."
+            String(localized: "Could not read the model's response.")
         }
     }
 }
@@ -139,7 +139,7 @@ struct ClaudeStreamDecoder {
             let error = object["error"] as? [String: Any]
             throw ClaudeError.api(
                 type: error?["type"] as? String ?? "error",
-                message: error?["message"] as? String ?? "неизвестная ошибка"
+                message: error?["message"] as? String ?? "unknown error"
             )
         default:
             // message_start, ping, content_block_start/stop (including thinking and
@@ -205,6 +205,49 @@ struct ClaudeClient: Sendable {
            let message = error["message"] as? String {
             return message
         }
-        return String(data: data.prefix(300), encoding: .utf8) ?? "пустой ответ"
+        return String(data: data.prefix(300), encoding: .utf8) ?? "empty response"
+    }
+}
+
+/// Claude through the Claude API with an API key from the keychain.
+struct ClaudeAPIBackend: ModelBackend {
+    let keyStore: any SecretStoring
+
+    func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
+        let keyStore = keyStore
+        let body = Self.body(for: prompt, model: model)
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    guard let key = try keyStore.read()?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty else {
+                        throw ClaudeError.missingAPIKey
+                    }
+                    for try await text in ClaudeClient(apiKey: key).streamText(body) {
+                        continuation.yield(text)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    static func body(for prompt: PreparedPrompt, model: String) -> ClaudeMessagesRequest {
+        let messages = prompt.turns.map { turn in
+            var content: [ClaudeMessagesRequest.ContentBlock] = []
+            if let image = turn.imageJPEG { content.append(.jpeg(image)) }
+            content.append(.text(turn.text))
+            return ClaudeMessagesRequest.Message(role: turn.role.rawValue, content: content)
+        }
+        return ClaudeMessagesRequest(
+            model: model,
+            maxTokens: prompt.maxTokens,
+            system: [.text(prompt.system, cached: prompt.cacheSystem)],
+            messages: messages,
+            outputConfig: .init(effort: prompt.effort),
+            fallbacks: ClaudeModel(rawValue: model)?.supportsDefaultFallback == true ? "default" : nil
+        )
     }
 }

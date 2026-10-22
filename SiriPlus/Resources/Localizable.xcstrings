@@ -1,0 +1,1706 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ connected": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ подключён"
+          }
+        }
+      }
+    },
+    "%@ is not running. Start the call or choose “All system audio”.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ не запущен. Начните созвон или выберите «Весь звук системы»."
+          }
+        }
+      }
+    },
+    "API key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ API"
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О приложении"
+          }
+        }
+      }
+    },
+    "Account": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккаунт"
+          }
+        }
+      }
+    },
+    "Account default": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По умолчанию для аккаунта"
+          }
+        }
+      }
+    },
+    "Add an API key in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавьте ключ API в Настройках."
+          }
+        }
+      }
+    },
+    "Agenda, project facts, numbers, things not to forget. They make hints more accurate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повестка, факты о проекте, цифры, о чём не забыть. С ними подсказки точнее."
+          }
+        }
+      }
+    },
+    "All system audio": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Весь звук системы"
+          }
+        }
+      }
+    },
+    "Allowed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешено"
+          }
+        }
+      }
+    },
+    "Answer style": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стиль ответа"
+          }
+        }
+      }
+    },
+    "Answer to a question": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ответ на вопрос"
+          }
+        }
+      }
+    },
+    "Ask (⌃⌥Space)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спросить (⌃⌥Пробел)"
+          }
+        }
+      }
+    },
+    "Ask anything, or take a screenshot and I’ll look at it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спроси что угодно или сделай снимок экрана — я посмотрю, что на нём."
+          }
+        }
+      }
+    },
+    "Ask anything…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спроси что-нибудь…"
+          }
+        }
+      }
+    },
+    "Assistant": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Помощник"
+          }
+        }
+      }
+    },
+    "Audio level: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уровень звука: %@"
+          }
+        }
+      }
+    },
+    "Brief": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кратко"
+          }
+        }
+      }
+    },
+    "Capture the main display without the Siri+ window. macOS will ask for permission.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снять основной экран без окна Siri+. macOS запросит разрешение."
+          }
+        }
+      }
+    },
+    "Capturing…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимаю…"
+          }
+        }
+      }
+    },
+    "ChatGPT sign-in could not be verified. Try again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось подтвердить вход в ChatGPT. Попробуйте ещё раз."
+          }
+        }
+      }
+    },
+    "ChatGPT sign-in failed (%lld).": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход в ChatGPT не удался (%lld)."
+          }
+        }
+      }
+    },
+    "ChatGPT sign-in returned incomplete tokens.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход в ChatGPT вернул неполные данные."
+          }
+        }
+      }
+    },
+    "ChatGPT sign-in timed out.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Время ожидания входа в ChatGPT истекло."
+          }
+        }
+      }
+    },
+    "Check Again": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить снова"
+          }
+        }
+      }
+    },
+    "Choose a ChatGPT model in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите модель ChatGPT в Настройках."
+          }
+        }
+      }
+    },
+    "Choose the call app and click Start. Headphones work best: then your microphone doesn’t repeat the other side.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите приложение созвона и нажмите «Начать». Лучше в наушниках: так микрофон не повторяет собеседника."
+          }
+        }
+      }
+    },
+    "Claude Code": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code"
+          }
+        }
+      }
+    },
+    "Claude Code could not complete the request.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code не смог выполнить запрос."
+          }
+        }
+      }
+    },
+    "Claude Code is not installed. Install it from code.claude.com, then sign in in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code не установлен. Установите его с code.claude.com и войдите в Настройках."
+          }
+        }
+      }
+    },
+    "Claude Haiku 5.5 — fastest and cheapest": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Haiku 5.5 — самый быстрый и дешёвый"
+          }
+        }
+      }
+    },
+    "Claude Opus 5.5 — most accurate": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Opus 5.5 — точнее всех"
+          }
+        }
+      }
+    },
+    "Claude Sonnet 5.5 — faster": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Sonnet 5.5 — быстрее"
+          }
+        }
+      }
+    },
+    "Claude account sign-in works through the official Claude Code app. Install it, then click Sign In.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход в аккаунт Claude работает через официальное приложение Claude Code. Установите его и нажмите «Войти»."
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Очистить"
+          }
+        }
+      }
+    },
+    "Conversation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Диалог"
+          }
+        }
+      }
+    },
+    "Conversation history and screenshots are not saved to disk.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История диалога и снимки не сохраняются на диск."
+          }
+        }
+      }
+    },
+    "Copy": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать"
+          }
+        }
+      }
+    },
+    "Copy the transcript": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать расшифровку"
+          }
+        }
+      }
+    },
+    "Could not load the list of ChatGPT models.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось загрузить список моделей ChatGPT."
+          }
+        }
+      }
+    },
+    "Could not open Terminal.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось открыть Терминал."
+          }
+        }
+      }
+    },
+    "Could not open the browser.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось открыть браузер."
+          }
+        }
+      }
+    },
+    "Could not read the model's response.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать ответ модели."
+          }
+        }
+      }
+    },
+    "Default (GPT-6.1 Sol)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По умолчанию (GPT-6.1 Sol)"
+          }
+        }
+      }
+    },
+    "Delete Key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить ключ"
+          }
+        }
+      }
+    },
+    "Detailed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробно"
+          }
+        }
+      }
+    },
+    "Dismiss the error": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Закрыть сообщение об ошибке"
+          }
+        }
+      }
+    },
+    "Explain what’s on the screen": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объясни, что на экране"
+          }
+        }
+      }
+    },
+    "GPT-6 Astra — most capable": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPT-6 Astra — самая мощная"
+          }
+        }
+      }
+    },
+    "GPT-6 Luna — fastest and cheapest": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPT-6 Luna — самая быстрая и дешёвая"
+          }
+        }
+      }
+    },
+    "GPT-6.1 Sol — balanced": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPT-6.1 Sol — сбалансированная"
+          }
+        }
+      }
+    },
+    "Get an API key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Получить ключ API"
+          }
+        }
+      }
+    },
+    "Help me with a question": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Помоги с вопросом"
+          }
+        }
+      }
+    },
+    "Hide (Esc)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скрыть (Esc)"
+          }
+        }
+      }
+    },
+    "Hint Now": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказать"
+          }
+        }
+      }
+    },
+    "Hint Now (⌃⌥Space)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказать сейчас (⌃⌥Пробел)"
+          }
+        }
+      }
+    },
+    "Hints": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки"
+          }
+        }
+      }
+    },
+    "Install Claude Code": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установить Claude Code"
+          }
+        }
+      }
+    },
+    "It will be sent with your next message.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уйдёт вместе со следующим сообщением."
+          }
+        }
+      }
+    },
+    "I’ll suggest an answer when the other side asks a question.\n⌃⌥Space — hint now.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подскажу, когда собеседник задаст вопрос.\n⌃⌥Пробел — подсказать сейчас."
+          }
+        }
+      }
+    },
+    "Keychain: %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Связка ключей: %@."
+          }
+        }
+      }
+    },
+    "Let the participants know you use an assistant.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Предупредите участников, что используете помощника."
+          }
+        }
+      }
+    },
+    "Listening stopped: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись остановлена: %@"
+          }
+        }
+      }
+    },
+    "Listening to the meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю созвон"
+          }
+        }
+      }
+    },
+    "Listening… Text appears when someone speaks.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю… Текст появится, когда кто-нибудь заговорит."
+          }
+        }
+      }
+    },
+    "Me": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Я"
+          }
+        }
+      }
+    },
+    "Meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Созвон"
+          }
+        }
+      }
+    },
+    "Meeting in progress": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Идёт созвон"
+          }
+        }
+      }
+    },
+    "Meeting notes": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Материалы к встрече"
+          }
+        }
+      }
+    },
+    "Microphone": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Микрофон"
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель"
+          }
+        }
+      }
+    },
+    "Needed for screenshots and for meeting audio. After granting it you may need to restart the app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужна для снимков экрана и звука созвона. После выдачи разрешения может потребоваться перезапуск."
+          }
+        }
+      }
+    },
+    "New Conversation": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новый диалог"
+          }
+        }
+      }
+    },
+    "No answer: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ответ не получен: %@"
+          }
+        }
+      }
+    },
+    "No display is available. Connect a display and take the screenshot again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не найден доступный экран. Подключите дисплей и повторите снимок."
+          }
+        }
+      }
+    },
+    "No display was found for audio capture.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не найден экран для захвата звука."
+          }
+        }
+      }
+    },
+    "No microphone access. Allow it in System Settings → Privacy & Security → Microphone, or turn off your voice in Siri+ Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет доступа к микрофону. Разрешите его в Системных настройках → Конфиденциальность и безопасность → Микрофон или отключите свой голос в Настройках Siri+."
+          }
+        }
+      }
+    },
+    "No screenshot. Check Screen Recording access in macOS settings and try again. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимок не получен. Проверьте доступ к записи экрана в настройках macOS и повторите. %@"
+          }
+        }
+      }
+    },
+    "Not installed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не установлен"
+          }
+        }
+      }
+    },
+    "On questions and topic": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На вопросы и по теме"
+          }
+        }
+      }
+    },
+    "On questions only": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только на вопросы"
+          }
+        }
+      }
+    },
+    "On request": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По запросу"
+          }
+        }
+      }
+    },
+    "On the topic": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По теме"
+          }
+        }
+      }
+    },
+    "On-device speech recognition for %@ is not available on this Mac. Choose another language in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Локальное распознавание для %@ недоступно на этом Mac. Выберите другой язык в Настройках."
+          }
+        }
+      }
+    },
+    "Only when asked": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только по запросу"
+          }
+        }
+      }
+    },
+    "Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the cloud.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В облако уходят только ваши сообщения, снимок экрана по кнопке и последний фрагмент расшифровки созвона, когда нужна подсказка."
+          }
+        }
+      }
+    },
+    "Open Assistant": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть помощника"
+          }
+        }
+      }
+    },
+    "Open Microphone Settings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть настройки микрофона"
+          }
+        }
+      }
+    },
+    "Open Screen Recording Settings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть настройки записи экрана"
+          }
+        }
+      }
+    },
+    "Open Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть Siri+"
+          }
+        }
+      }
+    },
+    "Open System Settings → Privacy & Security → %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте Системные настройки → Конфиденциальность и безопасность → %@."
+          }
+        }
+      }
+    },
+    "Open the Siri+ window": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть окно Siri+"
+          }
+        }
+      }
+    },
+    "Opens the Siri+ app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открывает приложение Siri+."
+          }
+        }
+      }
+    },
+    "Panel": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Панель"
+          }
+        }
+      }
+    },
+    "Permission required": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Требуется разрешение"
+          }
+        }
+      }
+    },
+    "Personal assistant": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Личный помощник"
+          }
+        }
+      }
+    },
+    "Platform": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Платформа"
+          }
+        }
+      }
+    },
+    "Ports 1455 and 1457 are busy, so the sign-in callback cannot be received. Close the app using them and try again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Порты 1455 и 1457 заняты, поэтому ответ входа не может быть получен. Закройте приложение, которое их использует, и повторите."
+          }
+        }
+      }
+    },
+    "Preparing an answer…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готовлю ответ…"
+          }
+        }
+      }
+    },
+    "Preparing speech recognition…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готовлю распознавание…"
+          }
+        }
+      }
+    },
+    "Provider": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Провайдер"
+          }
+        }
+      }
+    },
+    "Quit Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершить Siri+"
+          }
+        }
+      }
+    },
+    "Recognize my voice too (microphone)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавать и мой голос (микрофон)"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновить"
+          }
+        }
+      }
+    },
+    "Refresh the list of running apps": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновить список запущенных приложений"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить"
+          }
+        }
+      }
+    },
+    "Request text": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст запроса"
+          }
+        }
+      }
+    },
+    "Requests use your ChatGPT subscription limits.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запросы расходуют лимиты вашей подписки ChatGPT."
+          }
+        }
+      }
+    },
+    "Requests use your Claude subscription limits through Claude Code.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запросы через Claude Code расходуют лимиты вашей подписки Claude."
+          }
+        }
+      }
+    },
+    "Save Key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранить ключ"
+          }
+        }
+      }
+    },
+    "Saved in the keychain": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранён в связке ключей"
+          }
+        }
+      }
+    },
+    "Screen & System Audio Recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись экрана и системного звука"
+          }
+        }
+      }
+    },
+    "Screen & system audio recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись экрана и звука"
+          }
+        }
+      }
+    },
+    "Screen and Audio Access": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступ к экрану и звуку"
+          }
+        }
+      }
+    },
+    "Screenshot": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимок экрана"
+          }
+        }
+      }
+    },
+    "Screenshot of the main display": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимок основного экрана"
+          }
+        }
+      }
+    },
+    "Screenshot · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимок экрана · %@"
+          }
+        }
+      }
+    },
+    "Screenshots are taken only when you click the button": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Снимки делаются только по кнопке"
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки…"
+          }
+        }
+      }
+    },
+    "Show Hint Panel": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать панель подсказок"
+          }
+        }
+      }
+    },
+    "Show message time": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывать время сообщений"
+          }
+        }
+      }
+    },
+    "Sign In": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войти"
+          }
+        }
+      }
+    },
+    "Sign In to ChatGPT": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войти в ChatGPT"
+          }
+        }
+      }
+    },
+    "Sign In to Claude": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войти в Claude"
+          }
+        }
+      }
+    },
+    "Sign Out": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти"
+          }
+        }
+      }
+    },
+    "Sign in to your ChatGPT account in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войдите в аккаунт ChatGPT в Настройках."
+          }
+        }
+      }
+    },
+    "Sign in to your Claude account in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войдите в аккаунт Claude в Настройках."
+          }
+        }
+      }
+    },
+    "Sign in with browser": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход через браузер"
+          }
+        }
+      }
+    },
+    "Sign-in": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход"
+          }
+        }
+      }
+    },
+    "Sign-in could not be completed. Return to Siri+ for details.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход не завершён. Подробности — в Siri+."
+          }
+        }
+      }
+    },
+    "Sign-in required": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нужно войти"
+          }
+        }
+      }
+    },
+    "Signed in to Siri+. You can close this tab.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вход в Siri+ выполнен. Эту вкладку можно закрыть."
+          }
+        }
+      }
+    },
+    "Siri and Shortcuts": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri и Команды"
+          }
+        }
+      }
+    },
+    "Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+"
+          }
+        }
+      }
+    },
+    "Siri+ is listening to the meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ слушает созвон"
+          }
+        }
+      }
+    },
+    "Siri+ lives in the menu bar and does not appear in the Dock.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ живёт в строке меню и не показывается в Доке."
+          }
+        }
+      }
+    },
+    "Speech is recognized\non this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Речь распознаётся\nна этом Mac."
+          }
+        }
+      }
+    },
+    "Speech is recognized on this Mac. Only the latest part of the transcript goes to the model, when a hint is needed.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Речь распознаётся на этом Mac. Модели уходит только последний фрагмент расшифровки, когда нужна подсказка."
+          }
+        }
+      }
+    },
+    "Speech language": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Язык речи"
+          }
+        }
+      }
+    },
+    "Speech recognition runs on this Mac. ⌃⌥Space in any app asks for a hint. The hint panel is hidden from screen sharing.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание речи работает на этом Mac. ⌃⌥Пробел в любом приложении — подсказать сейчас. Панель подсказок скрыта от демонстрации экрана."
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать"
+          }
+        }
+      }
+    },
+    "Start Meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать созвон"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить"
+          }
+        }
+      }
+    },
+    "Stop Meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить созвон"
+          }
+        }
+      }
+    },
+    "System (%@)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Системный (%@)"
+          }
+        }
+      }
+    },
+    "Terminal opens with Claude Code’s sign-in; finish it in the browser. Siri+ notices when you are signed in.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откроется Терминал со входом Claude Code — завершите его в браузере. Siri+ сама заметит, что вы вошли."
+          }
+        }
+      }
+    },
+    "The API key was not accepted. Check it in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ API не принят. Проверьте его в Настройках."
+          }
+        }
+      }
+    },
+    "The ChatGPT sign-in page opens in the browser.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Страница входа в ChatGPT откроется в браузере."
+          }
+        }
+      }
+    },
+    "The Claude account usage limit is reached. Try later or choose another model.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лимит аккаунта Claude исчерпан. Попробуйте позже или выберите другую модель."
+          }
+        }
+      }
+    },
+    "The key was not deleted. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ не удалён. %@"
+          }
+        }
+      }
+    },
+    "The key was not saved. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ не сохранён. %@"
+          }
+        }
+      }
+    },
+    "The model could not complete the request.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель не смогла выполнить запрос."
+          }
+        }
+      }
+    },
+    "The model declined to answer this request.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель отказалась отвечать на этот запрос."
+          }
+        }
+      }
+    },
+    "The service returned error %lld: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервис вернул ошибку %lld: %@"
+          }
+        }
+      }
+    },
+    "The speech recognition model did not report an audio format.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель распознавания речи не сообщила формат звука."
+          }
+        }
+      }
+    },
+    "The “Open Assistant” action is available in Shortcuts and through Siri.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Действие «Открыть помощника» доступно в «Командах» и через Siri."
+          }
+        }
+      }
+    },
+    "Their audio": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Звук собеседника"
+          }
+        }
+      }
+    },
+    "Them": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собеседник"
+          }
+        }
+      }
+    },
+    "To get answers, sign in to Claude or ChatGPT in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы я отвечал, войди в Claude или ChatGPT в Настройках."
+          }
+        }
+      }
+    },
+    "Too many requests or the usage limit is reached. Wait a little.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слишком много запросов или исчерпан лимит. Подождите немного."
+          }
+        }
+      }
+    },
+    "Transcript": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расшифровка"
+          }
+        }
+      }
+    },
+    "Type a request…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напиши запрос…"
+          }
+        }
+      }
+    },
+    "Waiting for sign-in…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Жду входа…"
+          }
+        }
+      }
+    },
+    "Where shall we start?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "С чего начнём?"
+          }
+        }
+      }
+    },
+    "Without a signed-in model the transcript works, but hints don’t.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без входа в модель расшифровка работает, а подсказки — нет."
+          }
+        }
+      }
+    },
+    "You": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ты"
+          }
+        }
+      }
+    },
+    "Your context. One conversation.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Твой контекст. Один диалог."
+          }
+        }
+      }
+    },
+    "⌘↩ send · ⌘N new conversation · history is kept until the app quits": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘↩ отправить · ⌘N новый диалог · история хранится до закрытия приложения"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

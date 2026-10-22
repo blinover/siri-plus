@@ -6,7 +6,9 @@ enum Speaker: String, Sendable, Hashable {
     /// Other participants, captured from the meeting app's audio.
     case them
 
-    var title: String { self == .me ? "Я" : "Собеседник" }
+    var title: String { self == .me ? String(localized: "Me") : String(localized: "Them") }
+    /// Fixed English label for model prompts, independent of the interface language.
+    var promptLabel: String { self == .me ? "Me" : "Them" }
 }
 
 /// One recognition result from a channel. Volatile results are replaced by later
@@ -72,11 +74,11 @@ struct Transcript: Sendable {
     }
 
     /// Plain-text transcript of the most recent turns, limited to roughly `characterLimit`.
-    func recentText(characterLimit: Int) -> String {
+    func recentText(characterLimit: Int, label: (Speaker) -> String = \.promptLabel) -> String {
         var lines: [String] = []
         var count = 0
         for turn in turns.reversed() {
-            let line = "\(turn.speaker.title): \(turn.text)"
+            let line = "\(label(turn.speaker)): \(turn.text)"
             if count + line.count > characterLimit, !lines.isEmpty { break }
             lines.append(line)
             count += line.count + 1

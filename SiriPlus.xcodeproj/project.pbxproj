@@ -126,6 +126,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "166B903F0A1FB684CF4BD9ED";
 		};
+		"DBDF69F99D254CFDC086068E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Services/ChatGPTAccount.swift";
+			"sourceTree" = "<group>";
+		};
+		"9B2374785815E630F3D1B6CA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "DBDF69F99D254CFDC086068E";
+		};
 		"AB906699D55DF81EF0CCFD24" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -135,6 +145,16 @@
 		"C163B3333B25086E2691716F" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "AB906699D55DF81EF0CCFD24";
+		};
+		"F7DBAE448CF4D0B266033C86" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Services/ClaudeCodeBackend.swift";
+			"sourceTree" = "<group>";
+		};
+		"3AFD880A4AC8B97CCF328F0E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F7DBAE448CF4D0B266033C86";
 		};
 		"1B22637554A314B022DC8531" = {
 			"isa" = "PBXFileReference";
@@ -166,6 +186,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "AE282001F155A07C93D1BB6F";
 		};
+		"1C0404D71D8ABBE004FF2821" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Services/OpenAIBackend.swift";
+			"sourceTree" = "<group>";
+		};
+		"1B70E94F0D5D9191AF76D510" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "1C0404D71D8ABBE004FF2821";
+		};
 		"EA2FC0399B42B2F6888B0889" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -192,6 +222,36 @@
 			"path" = "Resources/Info.plist";
 			"sourceTree" = "<group>";
 		};
+		"DDFDA7D0CEFB8C6B7C53EE6A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json.xcstrings";
+			"path" = "Resources/Localizable.xcstrings";
+			"sourceTree" = "<group>";
+		};
+		"1ABB0BD182343F4D3D34C97F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "DDFDA7D0CEFB8C6B7C53EE6A";
+		};
+		"64EDA7777C9BDA561C52C1A1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json.xcstrings";
+			"path" = "Resources/InfoPlist.xcstrings";
+			"sourceTree" = "<group>";
+		};
+		"851FDB0CDEB99AC9A62F9AFA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "64EDA7777C9BDA561C52C1A1";
+		};
+		"D6A91D5EE14D526AABF00668" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json.xcstrings";
+			"path" = "Resources/AppShortcuts.xcstrings";
+			"sourceTree" = "<group>";
+		};
+		"FC9A149D788A9166046CE039" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "D6A91D5EE14D526AABF00668";
+		};
 		"FEA21CBDDF6230BE0845A293" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.plist.entitlements";
@@ -213,13 +273,19 @@
 				"753D80AF9A27076F5C46157E",
 				"E0B31FE2D18C569B32CBA594",
 				"166B903F0A1FB684CF4BD9ED",
+				"DBDF69F99D254CFDC086068E",
 				"AB906699D55DF81EF0CCFD24",
+				"F7DBAE448CF4D0B266033C86",
 				"1B22637554A314B022DC8531",
 				"6A13D64D688E58921400A855",
 				"AE282001F155A07C93D1BB6F",
+				"1C0404D71D8ABBE004FF2821",
 				"EA2FC0399B42B2F6888B0889",
 				"4A74E1BCF432CA2BF2AB9431",
 				"7B594B6DB375E1BF3F23CDD6",
+				"DDFDA7D0CEFB8C6B7C53EE6A",
+				"64EDA7777C9BDA561C52C1A1",
+				"D6A91D5EE14D526AABF00668",
 				"FEA21CBDDF6230BE0845A293",
 			);
 			"path" = "SiriPlus";
@@ -271,10 +337,13 @@
 				"B2A72071CD4F7626BDCE8442",
 				"F7FF3D1694F5FA86CAD5B352",
 				"841FC8DA1B99E91CA4388682",
+				"9B2374785815E630F3D1B6CA",
 				"C163B3333B25086E2691716F",
+				"3AFD880A4AC8B97CCF328F0E",
 				"8D1E82DEAF953DB008762630",
 				"51E04D8379A6DB36BF561F9F",
 				"C896D63F2132616B35B5FDAB",
+				"1B70E94F0D5D9191AF76D510",
 				"0C86F476938A7A1F8061E776",
 				"B49C04372A512DDE3EDD4C46",
 			);
@@ -292,7 +361,9 @@
 			"isa" = "PBXResourcesBuildPhase";
 			"buildActionMask" = "2147483647";
 			"files" = (
-
+				"1ABB0BD182343F4D3D34C97F",
+				"851FDB0CDEB99AC9A62F9AFA",
+				"FC9A149D788A9166046CE039",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -356,6 +427,7 @@
 					"@executable_path/../Frameworks",
 				);
 				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
 			};
 			"name" = "Debug";
 		};
@@ -379,6 +451,7 @@
 					"@executable_path/../Frameworks",
 				);
 				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
 			};
 			"name" = "Release";
 		};
@@ -418,11 +491,11 @@
 			};
 			"buildConfigurationList" = "41A2CC2D5321B7BB2E956CA5";
 			"compatibilityVersion" = "Xcode 14.0";
-			"developmentRegion" = "ru";
+			"developmentRegion" = "en";
 			"hasScannedForEncodings" = "0";
 			"knownRegions" = (
-				"ru",
 				"en",
+				"ru",
 				"Base",
 			);
 			"mainGroup" = "E50290A24C49A459B43487C5";

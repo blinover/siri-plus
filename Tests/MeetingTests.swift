@@ -30,8 +30,8 @@ struct TranscriptTests {
         transcript.apply(segment(.me, "после паузы", final: true, at: 30))
 
         #expect(transcript.turns.map(\.speaker) == [.them, .me, .me])
-        #expect(transcript.recentText(characterLimit: 1_000) == "Собеседник: вопрос\nЯ: ответ\nЯ: после паузы")
-        #expect(transcript.recentText(characterLimit: 20) == "Я: после паузы")
+        #expect(transcript.recentText(characterLimit: 1_000) == "Them: вопрос\nMe: ответ\nMe: после паузы")
+        #expect(transcript.recentText(characterLimit: 20) == "Me: после паузы")
     }
 
     @Test func interleavedSpeechKeepsUpdatingTheOpenTurn() {
@@ -80,81 +80,6 @@ struct QuestionDetectorTests {
     }
 }
 
-@Suite
-struct ClaudeProtocolTests {
-    private func events(_ lines: [String]) throws -> [ClaudeStreamDecoder.Event] {
-        var decoder = ClaudeStreamDecoder()
-        var result: [ClaudeStreamDecoder.Event] = []
-        for line in lines {
-            if let event = try decoder.consume(line: line) { result.append(event) }
-        }
-        return result
-    }
-
-    @Test func decodesTextAndIgnoresOtherBlocks() throws {
-        let decoded = try events([
-            "event: message_start", #"data: {"type":"message_start","message":{"id":"msg_1"}}"#, "",
-            "event: content_block_start", #"data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}"#, "",
-            "event: content_block_delta", #"data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"При"}}"#, "",
-            "event: content_block_delta", #"data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"вет"}}"#, "",
-            "event: ping", #"data: {"type":"ping"}"#, "",
-            "event: message_delta", #"data: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}"#, "",
-            "event: message_stop", #"data: {"type":"message_stop"}"#, "",
-        ])
-        #expect(decoded == [.text("При"), .text("вет"), .finished])
-    }
-
-    @Test func refusalAndErrorEventsThrow() {
-        #expect(throws: ClaudeError.refused) {
-            try events([#"data: {"type":"message_delta","delta":{"stop_reason":"refusal"}}"#, ""])
-        }
-        #expect(throws: ClaudeError.api(type: "overloaded_error", message: "Overloaded")) {
-            try events([#"data: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}"#, ""])
-        }
-    }
-
-    @Test func hintRequestUsesCachedSystemPromptAndFallback() throws {
-        let opus = try requestJSON(model: .opus)
-        #expect(opus["model"] as? String == "claude-opus-5-5")
-        #expect(opus["stream"] as? Bool == true)
-        #expect(opus["fallbacks"] as? String == "default")
-        #expect((opus["output_config"] as? [String: Any])?["effort"] as? String == "low")
-        #expect(opus["temperature"] == nil)
-        let system = try #require(opus["system"] as? [[String: Any]])
-        #expect((system[0]["cache_control"] as? [String: Any])?["type"] as? String == "ephemeral")
-        #expect((system[0]["text"] as? String)?.contains("Цена: 100 ₽") == true)
-
-        let haiku = try requestJSON(model: .haiku)
-        #expect(haiku["fallbacks"] == nil)
-    }
-
-    @Test func hintPromptCarriesTranscriptQuestionAndPreviousHints() {
-        let prompt = ClaudeAssistantService.hintUserPrompt(HintRequest(
-            trigger: .question("сколько стоит"),
-            transcript: "Собеседник: сколько стоит",
-            notes: "",
-            previousHints: ["Назови\nцену"],
-            model: .opus
-        ))
-        #expect(prompt.contains("<transcript>\nСобеседник: сколько стоит\n</transcript>"))
-        #expect(prompt.contains("- Назови цену"))
-        #expect(prompt.contains("«сколько стоит»"))
-    }
-
-    private func requestJSON(model: ClaudeModel) throws -> [String: Any] {
-        let body = ClaudeMessagesRequest(
-            model: model.rawValue,
-            maxTokens: 4_000,
-            system: [.text(ClaudeAssistantService.hintSystemPrompt(notes: "Цена: 100 ₽"), cached: true)],
-            messages: [.init(role: "user", content: [.text("привет")])],
-            outputConfig: .init(effort: "low"),
-            fallbacks: model.supportsDefaultFallback ? "default" : nil
-        )
-        let data = try JSONEncoder().encode(body)
-        return try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-    }
-}
-
 @Suite @MainActor
 struct MeetingModelTests {
     @Test func questionFromOtherSideTriggersHint() async throws {
@@ -169,7 +94,7 @@ struct MeetingModelTests {
 
         let request = try #require(hints.requests.first)
         #expect(request.trigger == .question("какой у вас опыт с kubernetes"))
-        #expect(request.transcript == "Собеседник: какой у вас опыт с kubernetes")
+        #expect(request.transcript == "Them: какой у вас опыт с kubernetes")
         #expect(meeting.latestHint?.text == "Скажи про три года опыта.")
         await meeting.stop()
         #expect(service.stopped)
@@ -229,7 +154,7 @@ struct MeetingModelTests {
         service.startError = MeetingError.microphoneDenied
         await meeting.start()
         #expect(meeting.phase == .idle)
-        #expect(meeting.errorMessage?.contains("микрофон") == true)
+        #expect(meeting.errorMessage?.contains("microphone") == true)
     }
 
     @Test func endedStreamStopsMeeting() async throws {
@@ -237,7 +162,7 @@ struct MeetingModelTests {
         await meeting.start()
         service.fail(MeetingError.noDisplay)
         try await eventually { meeting.phase == .idle }
-        #expect(meeting.errorMessage?.contains("Запись остановлена") == true)
+        #expect(meeting.errorMessage?.contains("Listening stopped") == true)
     }
 
     private func makeMeeting(

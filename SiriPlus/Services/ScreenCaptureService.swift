@@ -18,7 +18,7 @@ enum ScreenCaptureError: LocalizedError {
     case noDisplay
 
     var errorDescription: String? {
-        "Не найден доступный экран. Подключите дисплей и повторите снимок."
+        String(localized: "No display is available. Connect a display and take the screenshot again.")
     }
 }
 

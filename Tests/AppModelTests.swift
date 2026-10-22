@@ -35,7 +35,7 @@ struct AppModelTests {
         let second = try #require(model.send("Уточнение"))
         let request = await service.waitForRequest()
         #expect(request.messages.map(\.text) == ["Вопрос", "Первый ответ", "Уточнение"])
-        #expect(request.model == .opus)
+        #expect(request.selection.claudeModel == .opus)
         service.complete("Второй ответ")
         await second.value
         #expect(model.messages.count == 4)
@@ -62,7 +62,7 @@ struct AppModelTests {
         await service.waitForRequest()
         service.fail(ClaudeError.missingAPIKey)
         await task.value
-        #expect(model.errorMessage?.contains("ключ") == true)
+        #expect(model.errorMessage?.contains("API key") == true)
         #expect(model.messages.count == 1)
     }
 
@@ -97,16 +97,40 @@ struct AppModelTests {
         #expect(model.snapshot == nil)
     }
 
-    @Test func apiKeyIsStoredAndRemoved() throws {
-        let keys = MemorySecretStore()
-        let model = makeModel(keyStore: keys)
-        #expect(!model.hasAPIKey)
-        model.saveAPIKey("  sk-ant-test \n")
-        #expect(model.hasAPIKey)
-        #expect(try keys.read() == "sk-ant-test")
-        model.deleteAPIKey()
-        #expect(!model.hasAPIKey)
-        #expect(try keys.read() == nil)
+    @Test func apiKeysAreStoredPerProvider() throws {
+        var credentials = Credentials.inMemory()
+        let claude = MemorySecretStore(), openAI = MemorySecretStore()
+        credentials.claudeKey = claude
+        credentials.openAIKey = openAI
+        let model = makeModel(credentials: credentials)
+        model.preferences.claudeAuth = .apiKey
+        #expect(!model.isModelReady)
+
+        model.saveAPIKey("  sk-ant-test \n", for: .claude)
+        #expect(model.accounts.hasClaudeKey)
+        #expect(!model.accounts.hasOpenAIKey)
+        #expect(try claude.read() == "sk-ant-test")
+        #expect(model.isModelReady)
+
+        model.preferences.provider = .openAI
+        model.preferences.openAIAuth = .apiKey
+        #expect(!model.isModelReady)
+        model.saveAPIKey("sk-openai", for: .openAI)
+        #expect(model.isModelReady)
+        model.deleteAPIKey(for: .claude)
+        #expect(try claude.read() == nil)
+        #expect(try openAI.read() == "sk-openai")
+    }
+
+    @Test func accountsReflectClaudeCodeSignIn() async {
+        var credentials = Credentials.inMemory()
+        credentials.claudeCodeStatus = { ClaudeCodeStatus(installed: true, signedIn: true, account: "me@example.com", subscription: "pro") }
+        let model = makeModel(credentials: credentials)
+        #expect(!model.isModelReady)
+        await model.refreshAccounts()
+        #expect(model.accounts.claudeCode.account == "me@example.com")
+        #expect(model.isModelReady)
+        #expect(model.accounts.chatGPTEmail == nil)
     }
 
     @Test func preferencesPersistAndCorruptDataFallsBack() throws {
@@ -114,7 +138,10 @@ struct AppModelTests {
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let store = PreferencesStore(defaults: defaults)
-        let preferences = AssistantPreferences(replyStyle: .detailed, showTimestamps: false, model: .haiku, hintMode: .manual)
+        let preferences = AssistantPreferences(
+            replyStyle: .detailed, showTimestamps: false, provider: .openAI, model: .haiku,
+            claudeAuth: .apiKey, openAIModel: "gpt-6-luna", hintMode: .manual, transcriptionLocale: "en-US"
+        )
         store.save(preferences)
         #expect(PreferencesStore(defaults: defaults).load() == preferences)
 
@@ -131,20 +158,22 @@ struct AppModelTests {
         #expect(loaded.replyStyle == .detailed)
         #expect(!loaded.showTimestamps)
         #expect(loaded.model == .opus)
+        #expect(loaded.claudeAuth == .account)
         #expect(loaded.hintMode == .questionsAndTopic)
+        #expect(loaded.transcriptionLocale == AssistantPreferences.systemLocale)
     }
 
     private func makeModel(
         assistant: any AssistantService & HintService = ControlledAssistant(),
         screenCapture: any ScreenCapturing = StubScreenCapture(),
-        keyStore: any SecretStoring = MemorySecretStore()
+        credentials: Credentials = .inMemory()
     ) -> AppModel {
         AppModel(
             assistant: assistant,
             meetingService: FakeMeetingService(),
             screenCapture: screenCapture,
             preferencesStore: PreferencesStore(defaults: UserDefaults(suiteName: UUID().uuidString)!),
-            keyStore: keyStore
+            credentials: credentials
         )
     }
 }
@@ -202,6 +231,18 @@ final class ControlledAssistant: AssistantService, HintService, @unchecked Senda
             return self.continuation
         }
         continuation?.finish(throwing: error)
+    }
+}
+
+extension Credentials {
+    /// No keychain, no Claude Code process: everything signed out.
+    static func inMemory() -> Credentials {
+        Credentials(
+            claudeKey: MemorySecretStore(),
+            openAIKey: MemorySecretStore(),
+            chatGPT: ChatGPTAccount(store: MemorySecretStore()),
+            claudeCodeStatus: { ClaudeCodeStatus() }
+        )
     }
 }
 

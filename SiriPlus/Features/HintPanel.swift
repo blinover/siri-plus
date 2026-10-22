@@ -146,13 +146,19 @@ private struct SidePanelView: View {
         HStack(spacing: 10) {
             SiriOrb(isActive: isActive)
                 .frame(width: 26, height: 26)
-            Text(meeting.isRunning ? "Слушаю созвон" : "Siri+")
-                .font(.system(.headline, design: .rounded))
+            Group {
+                if meeting.isRunning {
+                    Text("Listening to the meeting")
+                } else {
+                    Text(verbatim: "Siri+")
+                }
+            }
+            .font(.system(.headline, design: .rounded))
             Spacer()
             Button { overlay.openApp() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                .help("Открыть окно Siri+")
+                .help("Open the Siri+ window")
             Button { overlay.hide() } label: { Image(systemName: "xmark") }
-                .help("Скрыть (Esc)")
+                .help("Hide (Esc)")
         }
         .buttonStyle(.borderless)
         .foregroundStyle(.secondary)
@@ -163,7 +169,7 @@ private struct SidePanelView: View {
         if let hint = meeting.latestHint {
             VStack(alignment: .leading, spacing: 8) {
                 if let question = hint.question {
-                    Text("«\(question)»")
+                    Text(verbatim: "“\(question)”")
                         .font(.system(.callout, design: .rounded))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -171,15 +177,15 @@ private struct SidePanelView: View {
                 answerText(hint.failure ?? hint.text, isFailure: hint.failure != nil)
             }
         } else {
-            Text("Подскажу, когда собеседник задаст вопрос.\n⌃⌥Пробел — подсказать сейчас.")
+            Text("I’ll suggest an answer when the other side asks a question.\n⌃⌥Space — hint now.")
                 .font(.system(.callout, design: .rounded))
                 .foregroundStyle(.secondary)
         }
         HStack {
-            Button("Подсказать", systemImage: "sparkles") { meeting.askNow() }
+            Button("Hint Now", systemImage: "sparkles") { meeting.askNow() }
                 .disabled(meeting.transcript.isEmpty)
             Spacer()
-            Button("Стоп", systemImage: "stop.fill") { Task { await meeting.stop() } }
+            Button("Stop", systemImage: "stop.fill") { Task { await meeting.stop() } }
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
@@ -187,7 +193,7 @@ private struct SidePanelView: View {
 
     @ViewBuilder
     private var askContent: some View {
-        TextField("Спроси что-нибудь…", text: $question, axis: .vertical)
+        TextField("Ask anything…", text: $question, axis: .vertical)
             .textFieldStyle(.plain)
             .font(.system(size: 17, weight: .medium, design: .rounded))
             .lineLimit(1...4)

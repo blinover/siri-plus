@@ -9,9 +9,9 @@ struct MeetingHint: Identifiable, Equatable, Sendable {
 
         var title: String {
             switch self {
-            case .question: "Ответ на вопрос"
-            case .topic: "По теме"
-            case .manual: "По запросу"
+            case .question: String(localized: "Answer to a question")
+            case .topic: String(localized: "On the topic")
+            case .manual: String(localized: "On request")
             }
         }
     }
@@ -111,7 +111,7 @@ final class MeetingModel: ObservableObject {
         do {
             let events = try await service.start(MeetingConfiguration(
                 source: source,
-                locale: Locale(identifier: settings.transcriptionLocale),
+                locale: settings.speechLocale,
                 capturesMicrophone: settings.capturesMicrophone
             ))
             guard phase == .starting else {
@@ -125,7 +125,7 @@ final class MeetingModel: ObservableObject {
                         self?.handle(event)
                     }
                 } catch {
-                    self?.errorMessage = "Запись остановлена: \(error.localizedDescription)"
+                    self?.errorMessage = String(localized: "Listening stopped: \(error.localizedDescription)")
                 }
                 await self?.stop()
             }
@@ -159,7 +159,7 @@ final class MeetingModel: ObservableObject {
         answeredLength = [:]
     }
 
-    var transcriptText: String { transcript.recentText(characterLimit: .max) }
+    var transcriptText: String { transcript.recentText(characterLimit: .max, label: \.title) }
 
     private func handle(_ event: MeetingEvent) {
         switch event {
@@ -222,7 +222,7 @@ final class MeetingModel: ObservableObject {
             transcript: transcript.recentText(characterLimit: 6_000),
             notes: notes,
             previousHints: hints.filter { !$0.isEmptyAnswer && $0.failure == nil }.suffix(3).map(\.text),
-            model: settings.model
+            selection: settings.selection
         )
         let hint = MeetingHint(id: UUID(), kind: kind, question: question, createdAt: Date())
         hints.append(hint)

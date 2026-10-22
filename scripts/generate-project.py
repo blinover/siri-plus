@@ -39,6 +39,11 @@ for source in sorted((ROOT / "SiriPlus").rglob("*.swift")):
     build_files.append(add("build:" + path, isa="PBXBuildFile", fileRef=file_id))
 
 source_files.append(add("Info.plist", isa="PBXFileReference", lastKnownFileType="text.plist.xml", path="Resources/Info.plist", sourceTree="<group>"))
+resource_files = []
+for catalog in ["Localizable.xcstrings", "InfoPlist.xcstrings", "AppShortcuts.xcstrings"]:
+    ref = add(catalog, isa="PBXFileReference", lastKnownFileType="text.json.xcstrings", path="Resources/" + catalog, sourceTree="<group>")
+    source_files.append(ref)
+    resource_files.append(add("build:" + catalog, isa="PBXBuildFile", fileRef=ref))
 source_files.append(add("SiriPlus.entitlements", isa="PBXFileReference", lastKnownFileType="text.plist.entitlements", path="Resources/SiriPlus.entitlements", sourceTree="<group>"))
 source_group = add("sourceGroup", isa="PBXGroup", children=source_files, path="SiriPlus", sourceTree="<group>")
 product = add("product", isa="PBXFileReference", explicitFileType="wrapper.application", includeInIndex="0", path="SiriPlus.app", sourceTree="BUILT_PRODUCTS_DIR")
@@ -49,7 +54,7 @@ main_group = add("mainGroup", isa="PBXGroup", children=[source_group, products, 
 phases = [
     add("sources", isa="PBXSourcesBuildPhase", buildActionMask="2147483647", files=build_files, runOnlyForDeploymentPostprocessing="0"),
     add("frameworks", isa="PBXFrameworksBuildPhase", buildActionMask="2147483647", files=[], runOnlyForDeploymentPostprocessing="0"),
-    add("resources", isa="PBXResourcesBuildPhase", buildActionMask="2147483647", files=[], runOnlyForDeploymentPostprocessing="0"),
+    add("resources", isa="PBXResourcesBuildPhase", buildActionMask="2147483647", files=resource_files, runOnlyForDeploymentPostprocessing="0"),
 ]
 
 config_lists = {}
@@ -86,12 +91,13 @@ for scope in ["project", "target"]:
                 "ENABLE_HARDENED_RUNTIME": "YES",
                 "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/../Frameworks"],
                 "SWIFT_EMIT_LOC_STRINGS": "YES",
+                "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
             }
         configs.append(add(scope + configuration, isa="XCBuildConfiguration", buildSettings=settings, name=configuration))
     config_lists[scope] = add(scope + "ConfigList", isa="XCConfigurationList", buildConfigurations=configs, defaultConfigurationIsVisible="0", defaultConfigurationName="Debug")
 
 target = add("appTarget", isa="PBXNativeTarget", buildConfigurationList=config_lists["target"], buildPhases=phases, buildRules=[], dependencies=[], name="SiriPlus", productName="SiriPlus", productReference=product, productType="com.apple.product-type.application")
-project = add("project", isa="PBXProject", attributes={"BuildIndependentTargetsInParallel": "YES", "LastUpgradeCheck": "1600"}, buildConfigurationList=config_lists["project"], compatibilityVersion="Xcode 14.0", developmentRegion="ru", hasScannedForEncodings="0", knownRegions=["ru", "en", "Base"], mainGroup=main_group, productRefGroup=products, projectDirPath="", projectRoot="", targets=[target])
+project = add("project", isa="PBXProject", attributes={"BuildIndependentTargetsInParallel": "YES", "LastUpgradeCheck": "1600"}, buildConfigurationList=config_lists["project"], compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings="0", knownRegions=["en", "ru", "Base"], mainGroup=main_group, productRefGroup=products, projectDirPath="", projectRoot="", targets=[target])
 
 directory = ROOT / "SiriPlus.xcodeproj"
 directory.mkdir(exist_ok=True)

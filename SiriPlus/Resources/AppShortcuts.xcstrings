@@ -1,0 +1,16 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Open ${applicationName}": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открой ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

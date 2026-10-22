@@ -10,9 +10,9 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .assistant: "Помощник"
-        case .meeting: "Созвон"
-        case .settings: "Настройки"
+        case .assistant: String(localized: "Assistant")
+        case .meeting: String(localized: "Meeting")
+        case .settings: String(localized: "Settings")
         }
     }
 
@@ -23,6 +23,32 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .settings: "slider.horizontal.3"
         }
     }
+}
+
+/// Sign-in state of every way to reach a model, shown in Settings.
+struct ProviderAccounts: Equatable {
+    var claudeCode = ClaudeCodeStatus()
+    var hasClaudeKey = false
+    var chatGPTEmail: String?
+    var hasOpenAIKey = false
+    var chatGPTModels: [OpenAIModelOption] = []
+
+    func isReady(_ selection: ModelSelection) -> Bool {
+        switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
+        case (.claude, .account, _): claudeCode.signedIn
+        case (.claude, .apiKey, _): hasClaudeKey
+        case (.openAI, _, .account): chatGPTEmail != nil
+        case (.openAI, _, .apiKey): hasOpenAIKey
+        }
+    }
+}
+
+/// Credential sources the app model manages. Tests replace them with in-memory fakes.
+struct Credentials {
+    var claudeKey: any SecretStoring = KeychainStore(account: "anthropic-api-key")
+    var openAIKey: any SecretStoring = KeychainStore(account: "openai-api-key")
+    var chatGPT = ChatGPTAccount()
+    var claudeCodeStatus: @Sendable () async -> ClaudeCodeStatus = { await ClaudeCodeBackend.status() }
 }
 
 @MainActor
@@ -38,7 +64,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isReplying = false
     @Published private(set) var isCapturing = false
     @Published private(set) var snapshot: ScreenSnapshot?
-    @Published private(set) var hasAPIKey = false
+    @Published private(set) var accounts = ProviderAccounts()
+    @Published private(set) var isSigningIn = false
     @Published var errorMessage: String?
 
     let meeting: MeetingModel
@@ -48,24 +75,30 @@ final class AppModel: ObservableObject {
     private let assistant: any AssistantService
     private let screenCapture: any ScreenCapturing
     private let preferencesStore: PreferencesStore
-    private let keyStore: any SecretStoring
+    private let credentials: Credentials
     private var replyTask: Task<Void, Never>?
     private var activeReplyID: UUID?
     private var captureID: UUID?
     private var meetingChanges: AnyCancellable?
 
     init(
-        assistant: any AssistantService & HintService = ClaudeAssistantService(),
+        assistant: (any AssistantService & HintService)? = nil,
         meetingService: any MeetingService = LiveMeetingService(),
         screenCapture: any ScreenCapturing = ScreenCaptureService(),
         preferencesStore: PreferencesStore = PreferencesStore(),
-        keyStore: any SecretStoring = KeychainStore(),
+        credentials: Credentials = Credentials(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
     ) {
+        let assistant = assistant ?? CloudAssistantService(
+            claudeAPI: ClaudeAPIBackend(keyStore: credentials.claudeKey),
+            claudeCode: ClaudeCodeBackend(),
+            openAIAPI: OpenAIAPIBackend(keyStore: credentials.openAIKey),
+            chatGPT: ChatGPTAccountBackend(account: credentials.chatGPT)
+        )
         self.assistant = assistant
         self.screenCapture = screenCapture
         self.preferencesStore = preferencesStore
-        self.keyStore = keyStore
+        self.credentials = credentials
         let preferences = preferencesStore.load()
         self.preferences = preferences
         var currentPreferences: () -> AssistantPreferences = { preferences }
@@ -73,10 +106,13 @@ final class AppModel: ObservableObject {
             currentPreferences()
         }
         currentPreferences = { [unowned self] in self.preferences }
-        hasAPIKey = (try? keyStore.read())?.isEmpty == false
+        accounts.hasClaudeKey = (try? credentials.claudeKey.read())?.isEmpty == false
+        accounts.hasOpenAIKey = (try? credentials.openAIKey.read())?.isEmpty == false
         // Views observing the app model also follow meeting state (menu bar icon, sidebar badge).
         meetingChanges = meeting.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
     }
+
+    var isModelReady: Bool { accounts.isReady(preferences.selection) }
 
     @discardableResult
     func send(_ text: String) -> Task<Void, Never>? {
@@ -90,7 +126,7 @@ final class AppModel: ObservableObject {
         partialReply = ""
         let requestID = UUID()
         activeReplyID = requestID
-        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, model: preferences.model)
+        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, selection: preferences.selection)
         replyTask = Task { [weak self, assistant] in
             var failure: Error?
             do {
@@ -103,7 +139,7 @@ final class AppModel: ObservableObject {
             }
             guard let self, self.activeReplyID == requestID else { return }
             if let failure, !(failure is CancellationError) {
-                self.errorMessage = "Ответ не получен: \(failure.localizedDescription)"
+                self.errorMessage = String(localized: "No answer: \(failure.localizedDescription)")
             }
             self.finishReply()
         }
@@ -136,7 +172,7 @@ final class AppModel: ObservableObject {
             snapshot = captured
         } catch {
             guard captureID == id else { return }
-            errorMessage = "Снимок не получен. Проверьте доступ к записи экрана в настройках macOS и повторите попытку. \(error.localizedDescription)"
+            errorMessage = String(localized: "No screenshot. Check Screen Recording access in macOS settings and try again. \(error.localizedDescription)")
         }
         guard captureID == id else { return }
         isCapturing = false
@@ -149,25 +185,80 @@ final class AppModel: ObservableObject {
         snapshot = nil
     }
 
-    func saveAPIKey(_ key: String) {
-        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        do {
-            try keyStore.save(trimmed)
-            hasAPIKey = true
-            errorMessage = nil
-        } catch {
-            errorMessage = "Ключ не сохранён. \(error.localizedDescription)"
+    // MARK: Accounts
+
+    /// Re-reads sign-in state: Claude Code status, ChatGPT tokens and its model list.
+    func refreshAccounts() async {
+        accounts.claudeCode = await credentials.claudeCodeStatus()
+        accounts.chatGPTEmail = await credentials.chatGPT.isSignedIn ? (await credentials.chatGPT.email ?? "ChatGPT") : nil
+        if accounts.chatGPTEmail != nil, accounts.chatGPTModels.isEmpty {
+            accounts.chatGPTModels = (try? await credentials.chatGPT.models()) ?? []
         }
     }
 
-    func deleteAPIKey() {
+    func saveAPIKey(_ key: String, for provider: AIProvider) {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
         do {
-            try keyStore.delete()
-            hasAPIKey = false
+            try store(for: provider).save(trimmed)
+            setHasKey(true, for: provider)
+            errorMessage = nil
         } catch {
-            errorMessage = "Ключ не удалён. \(error.localizedDescription)"
+            errorMessage = String(localized: "The key was not saved. \(error.localizedDescription)")
         }
+    }
+
+    func deleteAPIKey(for provider: AIProvider) {
+        do {
+            try store(for: provider).delete()
+            setHasKey(false, for: provider)
+        } catch {
+            errorMessage = String(localized: "The key was not deleted. \(error.localizedDescription)")
+        }
+    }
+
+    /// Opens Claude Code's browser sign-in in Terminal and waits until it reports success.
+    func signInToClaude() async {
+        isSigningIn = true
+        defer { isSigningIn = false }
+        do {
+            try await ClaudeCodeBackend.openSignIn()
+            for _ in 0..<100 {
+                try await Task.sleep(for: .seconds(3))
+                accounts.claudeCode = await credentials.claudeCodeStatus()
+                if accounts.claudeCode.signedIn { return }
+            }
+        } catch is CancellationError {
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func signInToChatGPT() async {
+        isSigningIn = true
+        defer { isSigningIn = false }
+        do {
+            try await credentials.chatGPT.signIn { url in await MainActor.run { NSWorkspace.shared.open(url) } }
+            NSApplication.shared.activate()
+            accounts.chatGPTModels = []
+            await refreshAccounts()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func signOutOfChatGPT() async {
+        try? await credentials.chatGPT.signOut()
+        accounts.chatGPTEmail = nil
+        accounts.chatGPTModels = []
+    }
+
+    private func store(for provider: AIProvider) -> any SecretStoring {
+        provider == .claude ? credentials.claudeKey : credentials.openAIKey
+    }
+
+    private func setHasKey(_ value: Bool, for provider: AIProvider) {
+        if provider == .claude { accounts.hasClaudeKey = value } else { accounts.hasOpenAIKey = value }
     }
 
     private func finishReply() {

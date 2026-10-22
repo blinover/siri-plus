@@ -6,8 +6,8 @@ enum KeychainError: LocalizedError {
 
     var errorDescription: String? {
         guard case .unexpectedStatus(let status) = self else { return nil }
-        let message = SecCopyErrorMessageString(status, nil) as String? ?? "код \(status)"
-        return "Связка ключей: \(message)."
+        let message = SecCopyErrorMessageString(status, nil) as String? ?? "\(status)"
+        return String(localized: "Keychain: \(message).")
     }
 }
 

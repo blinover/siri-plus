@@ -2,7 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key><string>ru</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
     <key>CFBundleDisplayName</key><string>Siri+</string>
     <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
@@ -13,9 +14,9 @@
     <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LSMinimumSystemVersion</key><string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>LSUIElement</key><true/>
-    <key>NSMicrophoneUsageDescription</key><string>Siri+ распознаёт ваш голос на созвоне локально, чтобы подсказки учитывали обе стороны разговора.</string>
-    <key>NSSpeechRecognitionUsageDescription</key><string>Siri+ превращает речь на созвоне в текст на этом Mac.</string>
-    <key>NSAudioCaptureUsageDescription</key><string>Siri+ слушает звук приложения созвона, чтобы подсказывать по теме разговора.</string>
+    <key>NSMicrophoneUsageDescription</key><string>Siri+ recognizes your voice during a meeting on this Mac so hints follow both sides of the conversation.</string>
+    <key>NSSpeechRecognitionUsageDescription</key><string>Siri+ turns meeting speech into text on this Mac.</string>
+    <key>NSAudioCaptureUsageDescription</key><string>Siri+ listens to the meeting app’s audio to give hints on the topic of the conversation.</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict>

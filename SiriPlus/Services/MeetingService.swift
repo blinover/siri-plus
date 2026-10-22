@@ -9,7 +9,7 @@ struct MeetingAudioSource: Identifiable, Hashable, Sendable {
     let id: String
     let name: String
 
-    static let system = MeetingAudioSource(id: "system", name: "Весь звук системы")
+    static let system = MeetingAudioSource(id: "system", name: String(localized: "All system audio"))
 
     /// Apps made for calls. When one of them is running it is picked automatically.
     static let callApps: [String] = [
@@ -64,15 +64,15 @@ enum MeetingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .microphoneDenied:
-            "Нет доступа к микрофону. Разрешите его в Системных настройках → Конфиденциальность и безопасность → Микрофон или отключите свой голос в Настройках Siri+."
+            String(localized: "No microphone access. Allow it in System Settings → Privacy & Security → Microphone, or turn off your voice in Siri+ Settings.")
         case .unsupportedLocale(let locale):
-            "Локальное распознавание для языка \(locale) недоступно на этом Mac."
+            String(localized: "On-device speech recognition for \(locale) is not available on this Mac. Choose another language in Settings.")
         case .appNotRunning(let name):
-            "\(name) не найден среди запущенных приложений. Запустите созвон или выберите «Весь звук системы»."
+            String(localized: "\(name) is not running. Start the call or choose “All system audio”.")
         case .noDisplay:
-            "Не найден экран для захвата звука."
+            String(localized: "No display was found for audio capture.")
         case .noAudioFormat:
-            "Модель распознавания речи не сообщила формат звука."
+            String(localized: "The speech recognition model did not report an audio format.")
         }
     }
 }

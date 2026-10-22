@@ -11,8 +11,8 @@ struct WorkspaceView: View {
                         .font(.title2)
                         .foregroundStyle(.indigo)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Siri+").font(.title2.bold())
-                        Text("Личный помощник").font(.caption).foregroundStyle(.secondary)
+                        Text(verbatim: "Siri+").font(.title2.bold())
+                        Text("Personal assistant").font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.horizontal, 18)
@@ -27,14 +27,21 @@ struct WorkspaceView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     if model.meeting.isRunning {
-                        Label("Идёт созвон", systemImage: "record.circle")
+                        Label("Meeting in progress", systemImage: "record.circle")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.red)
                     }
-                    Label(model.hasAPIKey ? "Claude подключён" : "Нужен ключ API", systemImage: "circle.inset.filled")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(model.hasAPIKey ? Color.indigo : Color.orange)
-                    Text("Речь распознаётся\nна этом Mac.")
+                    Group {
+                        if model.isModelReady {
+                            Label("\(model.preferences.provider.title) connected", systemImage: "circle.inset.filled")
+                                .foregroundStyle(.indigo)
+                        } else {
+                            Label("Sign-in required", systemImage: "circle.inset.filled")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    Text("Speech is recognized\non this Mac.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -55,7 +62,7 @@ struct WorkspaceView: View {
                             Image(systemName: "xmark")
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Закрыть сообщение об ошибке")
+                        .accessibilityLabel("Dismiss the error")
                     }
                     .font(.callout)
                     .padding()
@@ -67,7 +74,7 @@ struct WorkspaceView: View {
                 case .meeting:
                     MeetingView(
                         meeting: model.meeting,
-                        hasAPIKey: model.hasAPIKey,
+                        isModelReady: model.isModelReady,
                         showPanel: { model.showHintPanel?() },
                         openSettings: { model.selectedTab = .settings }
                     )
@@ -80,5 +87,6 @@ struct WorkspaceView: View {
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.indigo)
+        .task { await model.refreshAccounts() }
     }
 }
