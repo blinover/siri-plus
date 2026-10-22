@@ -49,25 +49,7 @@ struct WorkspaceView: View {
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
-            VStack(spacing: 0) {
-                if let error = model.errorMessage ?? model.meeting.errorMessage {
-                    HStack(alignment: .top) {
-                        Image(systemName: "exclamationmark.triangle")
-                        Text(error).textSelection(.enabled)
-                        Spacer()
-                        Button {
-                            model.errorMessage = nil
-                            model.meeting.errorMessage = nil
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Dismiss the error")
-                    }
-                    .font(.callout)
-                    .padding()
-                    .background(.orange.opacity(0.12))
-                }
+            Group {
                 switch model.selectedTab ?? .assistant {
                 case .assistant:
                     ChatView(model: model)
@@ -83,10 +65,42 @@ struct WorkspaceView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(nsColor: .textBackgroundColor))
+            // Errors float over the content as tinted glass instead of pushing it down.
+            .overlay(alignment: .top) {
+                if let error = model.errorMessage ?? model.meeting.errorMessage {
+                    errorBanner(error)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage)
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.indigo)
         .task { await model.refreshAccounts() }
+    }
+
+    private func errorBanner(_ error: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(error)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                model.errorMessage = nil
+                model.meeting.errorMessage = nil
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
+            .accessibilityLabel("Dismiss the error")
+        }
+        .font(.callout)
+        .padding(14)
+        .glassEffect(.regular.tint(.orange.opacity(0.25)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }

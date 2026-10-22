@@ -41,16 +41,6 @@
         }
       }
     },
-    "Account": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Аккаунт"
-          }
-        }
-      }
-    },
     "Account default": {
       "localizations": {
         "ru": {
@@ -201,6 +191,16 @@
         }
       }
     },
+    "ChatGPT account": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккаунт ChatGPT"
+          }
+        }
+      }
+    },
     "ChatGPT sign-in could not be verified. Try again.": {
       "localizations": {
         "ru": {
@@ -331,12 +331,12 @@
         }
       }
     },
-    "Claude account sign-in works through the official Claude Code app. Install it, then click Sign In.": {
+    "Claude account": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вход в аккаунт Claude работает через официальное приложение Claude Code. Установите его и нажмите «Войти»."
+            "value": "Аккаунт Claude"
           }
         }
       }
@@ -367,16 +367,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "История диалога и снимки не сохраняются на диск."
-          }
-        }
-      }
-    },
-    "Copy": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скопировать"
           }
         }
       }
@@ -871,22 +861,12 @@
         }
       }
     },
-    "Open Microphone Settings": {
+    "Open Settings": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Открыть настройки микрофона"
-          }
-        }
-      }
-    },
-    "Open Screen Recording Settings": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Открыть настройки записи экрана"
+            "value": "Открыть настройки"
           }
         }
       }
@@ -1341,16 +1321,6 @@
         }
       }
     },
-    "Siri and Shortcuts": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri и Команды"
-          }
-        }
-      }
-    },
     "Siri+": {
       "localizations": {
         "ru": {
@@ -1371,12 +1341,12 @@
         }
       }
     },
-    "Siri+ lives in the menu bar and does not appear in the Dock.": {
+    "Siri+ lives in the menu bar and does not appear in the Dock. The “Open Assistant” action is available in Shortcuts and through Siri.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Siri+ живёт в строке меню и не показывается в Доке."
+            "value": "Siri+ живёт в строке меню и не показывается в Доке. Действие «Открыть помощника» доступно в «Командах» и через Siri."
           }
         }
       }
@@ -1567,16 +1537,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Модель распознавания речи не сообщила формат звука."
-          }
-        }
-      }
-    },
-    "The “Open Assistant” action is available in Shortcuts and through Siri.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Действие «Открыть помощника» доступно в «Командах» и через Siri."
           }
         }
       }

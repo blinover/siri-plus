@@ -4,81 +4,82 @@ struct ChatView: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Assistant").font(.title2.bold())
-                    Text("Your context. One conversation.").foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button {
-                    model.newConversation()
-                } label: {
-                    Label("New Conversation", systemImage: "square.and.pencil")
-                }
-                // The app has no main menu (menu bar only), so the shortcut lives on the button.
-                .keyboardShortcut("n", modifiers: .command)
-            }
-            .padding(24)
-            Divider()
-
-            ScrollViewReader { proxy in
-                ScrollView {
-                    if model.messages.isEmpty {
-                        welcome
-                    } else {
-                        LazyVStack(alignment: .leading, spacing: 24) {
-                            ForEach(model.messages) { message in
-                                MessageRow(message: message, showTimestamp: model.preferences.showTimestamps)
-                                    .id(message.id)
-                            }
-                            if model.isReplying {
-                                if model.partialReply.isEmpty {
-                                    ProgressView("Preparing an answer…").controlSize(.small)
-                                } else {
-                                    MessageRow(
-                                        message: ChatMessage(role: .assistant, text: model.partialReply),
-                                        showTimestamp: false
-                                    )
-                                }
-                            }
-                            Color.clear.frame(height: 1).id("bottom")
+        ScrollViewReader { proxy in
+            ScrollView {
+                if model.messages.isEmpty {
+                    welcome
+                } else {
+                    LazyVStack(alignment: .leading, spacing: 24) {
+                        ForEach(model.messages) { message in
+                            MessageRow(message: message, showTimestamp: model.preferences.showTimestamps)
+                                .id(message.id)
                         }
-                        .padding(28)
+                        if model.isReplying {
+                            if model.partialReply.isEmpty {
+                                ProgressView("Preparing an answer…").controlSize(.small)
+                            } else {
+                                MessageRow(
+                                    message: ChatMessage(role: .assistant, text: model.partialReply),
+                                    showTimestamp: false
+                                )
+                            }
+                        }
+                        Color.clear.frame(height: 1).id("bottom")
                     }
-                }
-                .onChange(of: model.messages.count) {
-                    withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
-                }
-                .onChange(of: model.partialReply) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
+                    .padding(28)
                 }
             }
-
-            if let snapshot = model.snapshot {
-                HStack(spacing: 14) {
-                    Image(nsImage: snapshot.image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 112, height: 68)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .accessibilityLabel("Screenshot of the main display")
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Screenshot · \(snapshot.createdAt.formatted(date: .omitted, time: .shortened))")
-                            .font(.callout.weight(.medium))
-                        Text("It will be sent with your next message.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Remove", role: .destructive) { model.clearSnapshot() }
-                }
-                .padding(16)
-                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 24)
+            .onChange(of: model.messages.count) {
+                withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
             }
-
-            composer
+            .onChange(of: model.partialReply) {
+                proxy.scrollTo("bottom", anchor: .bottom)
+            }
         }
+        // Messages scroll under the floating glass composer.
+        .safeAreaInset(edge: .bottom) {
+            GlassEffectContainer(spacing: 12) {
+                VStack(spacing: 12) {
+                    if let snapshot = model.snapshot {
+                        snapshotCard(snapshot)
+                    }
+                    composer
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 20)
+        }
+        .navigationTitle("Assistant")
+        .navigationSubtitle("Your context. One conversation.")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
+                    // The app has no main menu (menu bar only), so the shortcut lives on the button.
+                    .keyboardShortcut("n", modifiers: .command)
+            }
+        }
+    }
+
+    private func snapshotCard(_ snapshot: ScreenSnapshot) -> some View {
+        HStack(spacing: 14) {
+            Image(nsImage: snapshot.image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 112, height: 68)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .accessibilityLabel("Screenshot of the main display")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Screenshot · \(snapshot.createdAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.callout.weight(.medium))
+                Text("It will be sent with your next message.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Remove", role: .destructive) { model.clearSnapshot() }
+                .buttonStyle(.glass)
+        }
+        .padding(14)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var welcome: some View {
@@ -114,10 +115,10 @@ struct ChatView: View {
         Button { model.draft = title } label: {
             Label(title, systemImage: symbol)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(.indigo.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.vertical, 6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
+        .controlSize(.large)
     }
 
     private var composer: some View {
@@ -138,17 +139,19 @@ struct ChatView: View {
                         Label("Screenshot", systemImage: "camera.viewfinder")
                     }
                 }
+                .buttonStyle(.glass)
                 .disabled(model.isCapturing)
                 .help("Capture the main display without the Siri+ window. macOS will ask for permission.")
                 Spacer()
                 if model.isReplying {
                     Button("Stop", systemImage: "stop.fill") { model.stopReply() }
+                        .buttonStyle(.glass)
                 } else {
                     Button("Send", systemImage: "arrow.up") {
                         model.send(model.draft)
                         model.draft = ""
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.glassProminent)
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
@@ -157,9 +160,7 @@ struct ChatView: View {
                 .font(.caption2).foregroundStyle(.secondary)
         }
         .padding(18)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(.quaternary))
-        .padding(24)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 

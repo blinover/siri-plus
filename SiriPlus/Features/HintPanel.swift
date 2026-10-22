@@ -155,13 +155,18 @@ private struct SidePanelView: View {
             }
             .font(.system(.headline, design: .rounded))
             Spacer()
-            Button { overlay.openApp() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                .help("Open the Siri+ window")
-            Button { overlay.hide() } label: { Image(systemName: "xmark") }
-                .help("Hide (Esc)")
+            GlassEffectContainer(spacing: 6) {
+                HStack(spacing: 6) {
+                    Button { overlay.openApp() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                        .help("Open the Siri+ window")
+                    Button { overlay.hide() } label: { Image(systemName: "xmark") }
+                        .help("Hide (Esc)")
+                }
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
         }
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
     }
 
     @ViewBuilder
@@ -187,7 +192,7 @@ private struct SidePanelView: View {
             Spacer()
             Button("Stop", systemImage: "stop.fill") { Task { await meeting.stop() } }
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.glass)
         .controlSize(.small)
     }
 
@@ -238,7 +243,7 @@ private struct SidePanelView: View {
     }
 }
 
-/// Translucent rounded card with Siri's animated rainbow edge while a reply is being written.
+/// Liquid Glass card with Siri's animated rainbow edge while a reply is being written.
 private struct SiriBackground: View {
     let isActive: Bool
     private let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -248,7 +253,7 @@ private struct SiriBackground: View {
             let angle = Angle.degrees(context.date.timeIntervalSinceReferenceDate * 90)
             let gradient = AngularGradient(colors: SiriColors.all, center: .center, angle: angle)
             ZStack {
-                shape.fill(.ultraThinMaterial)
+                Color.clear.glassEffect(.regular, in: shape)
                 shape.strokeBorder(gradient, lineWidth: isActive ? 3 : 1.2)
                     .blur(radius: isActive ? 6 : 0)
                     .opacity(isActive ? 0.9 : 0.5)
