@@ -4,6 +4,7 @@ import SwiftUI
 struct SiriPlusApp: App {
     @StateObject private var model: AppModel
     @State private var overlay: HintOverlay
+    @State private var callPrompt: CallPrompt
 
     init() {
         let model = AppModel()
@@ -11,6 +12,8 @@ struct SiriPlusApp: App {
         model.showHintPanel = { overlay.show() }
         _model = StateObject(wrappedValue: model)
         _overlay = State(initialValue: overlay)
+        _callPrompt = State(initialValue: CallPrompt(monitor: model.callMonitor))
+        model.callMonitor.start()
     }
 
     var body: some Scene {

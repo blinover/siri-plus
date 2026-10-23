@@ -62,10 +62,17 @@ struct PreferencesView: View {
                 Text(verbatim: "Русский").tag("ru-RU")
             }
             Toggle("Recognize my voice too (microphone)", isOn: $model.preferences.capturesMicrophone)
+            Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
+            Picker("Keep meetings in History", selection: $model.preferences.historyRetentionDays) {
+                Text("Forever").tag(0)
+                ForEach([7, 30, 90, 365], id: \.self) { days in
+                    Text("\(days) days").tag(days)
+                }
+            }
         } header: {
             Label("Meeting", systemImage: "waveform")
         } footer: {
-            footnote("Speech recognition runs on this Mac. ⌃⌥Space in any app asks for a hint. The hint panel is hidden from screen sharing.")
+            footnote("Speech recognition runs on this Mac. ⌃⌥Space in any app asks for a hint. The hint panel is hidden from screen sharing. A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself. Meetings older than the chosen period are deleted from this Mac automatically.")
         }
     }
 

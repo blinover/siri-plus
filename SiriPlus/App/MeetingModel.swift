@@ -57,6 +57,8 @@ final class MeetingModel: ObservableObject {
     @Published var selectedSourceID = MeetingAudioSource.system.id
     @Published var notes = ""
     @Published var errorMessage: String?
+    /// Receives every finished meeting that has a transcript.
+    var onFinish: ((MeetingRecord) -> Void)?
 
     private let service: any MeetingService
     private let hintService: any HintService
@@ -107,12 +109,14 @@ final class MeetingModel: ObservableObject {
         answeredLength = [:]
         wordsAtLastHint = 0
         lastHintAt = Date()
+        let startedAt = Date()
 
         do {
             let events = try await service.start(MeetingConfiguration(
                 source: source,
                 locale: settings.speechLocale,
-                capturesMicrophone: settings.capturesMicrophone
+                capturesMicrophone: settings.capturesMicrophone,
+                contextualStrings: MeetingConfiguration.contextualStrings(from: notes)
             ))
             guard phase == .starting else {
                 await service.stop()
@@ -128,6 +132,8 @@ final class MeetingModel: ObservableObject {
                     self?.errorMessage = String(localized: "Listening stopped: \(error.localizedDescription)")
                 }
                 await self?.stop()
+                // The stream ends after stopping flushed the last recognised text, so the transcript is complete here.
+                self?.archive(startedAt: startedAt)
             }
         } catch {
             phase = .idle
@@ -160,6 +166,18 @@ final class MeetingModel: ObservableObject {
     }
 
     var transcriptText: String { transcript.recentText(characterLimit: .max, label: \.title) }
+
+    private func archive(startedAt: Date) {
+        // A meeting started again before the old stream ended has already replaced the transcript.
+        guard phase == .idle, !transcript.isEmpty else { return }
+        let turns = transcript.turns.map { turn in
+            var turn = turn
+            turn.finalText = turn.text
+            turn.volatileText = ""
+            return turn
+        }
+        onFinish?(MeetingRecord(startedAt: startedAt, endedAt: Date(), turns: turns, notes: notes))
+    }
 
     private func handle(_ event: MeetingEvent) {
         switch event {

@@ -12,6 +12,28 @@ struct PromptTests {
         selection: ModelSelection()
     )
 
+    @Test func chatAboutMeetingCarriesItsTranscriptAndSummary() {
+        var meeting = MeetingRecord(
+            startedAt: Date(),
+            endedAt: Date().addingTimeInterval(1_800),
+            turns: [TranscriptTurn(id: UUID(), speaker: .them, startedAt: Date(), updatedAt: Date(), finalText: "бюджет утвердили", volatileText: "")],
+            notes: "Повестка: бюджет"
+        )
+        meeting.title = "Бюджет"
+        meeting.summary = "- Бюджет утверждён"
+        meeting.tasks = [MeetingTask(owner: "Анна", text: "письмо")]
+        let message = ChatMessage(role: .user, text: "Что решили?")
+        let plain = AssistantPrompts.chat(.init(messages: [message], replyStyle: .brief, selection: ModelSelection()))
+        #expect(!plain.cacheSystem)
+        #expect(!plain.system.contains("<meeting>"))
+
+        let prompt = AssistantPrompts.chat(.init(messages: [message], replyStyle: .brief, selection: ModelSelection(), meeting: meeting))
+        #expect(prompt.cacheSystem)
+        for part in ["Title: Бюджет", "lasted 30 min", "- Бюджет утверждён", "- Анна: письмо", "Повестка: бюджет", "<transcript>\nThem: бюджет утвердили\n</transcript>"] {
+            #expect(prompt.system.contains(part), "\(part)")
+        }
+    }
+
     @Test func hintPromptCarriesTranscriptNotesAndPreviousHints() {
         let prompt = AssistantPrompts.hint(hintRequest, language: "Russian")
         #expect(prompt.cacheSystem)

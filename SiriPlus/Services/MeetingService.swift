@@ -15,7 +15,7 @@ struct MeetingAudioSource: Identifiable, Hashable, Sendable {
     static let callApps: [String] = [
         "us.zoom.xos", "com.microsoft.teams2", "com.microsoft.teams", "com.apple.FaceTime",
         "com.cisco.webexmeetingsapp", "Cisco-Systems.Spark", "com.skype.skype",
-        "ru.yandex.telemost", "ru.keepcoder.Telegram", "com.tinyspeck.slackmacgap", "com.hnc.Discord",
+        "ru.yandex.telemost", "ru.keepcoder.Telegram", "com.tdesktop.Telegram", "com.tinyspeck.slackmacgap", "com.hnc.Discord",
         "net.whatsapp.WhatsApp", "com.vk.messenger",
     ]
 
@@ -46,6 +46,26 @@ struct MeetingConfiguration: Sendable {
     let source: MeetingAudioSource
     let locale: Locale
     let capturesMicrophone: Bool
+    /// Names and terms the recogniser should expect.
+    var contextualStrings: [String] = []
+
+    /// Words from the meeting materials worth hinting: names, product names, abbreviations, "k8s"-like terms.
+    /// Ordinary lowercase words are left out, recognition handles them anyway.
+    static func contextualStrings(from notes: String, limit: Int = 100) -> [String] {
+        var seen: Set<String> = []
+        var terms: [String] = []
+        let words = notes.split { !$0.isLetter && !$0.isNumber && !"-+#.".contains($0) }
+        for word in words {
+            let word = word.trimmingCharacters(in: CharacterSet(charactersIn: "-.#+"))
+            let hasLetter = word.contains(where: \.isLetter)
+            guard word.count >= 2, hasLetter,
+                  word.contains(where: \.isUppercase) || word.contains(where: \.isNumber),
+                  seen.insert(word.lowercased()).inserted else { continue }
+            terms.append(word)
+            if terms.count == limit { break }
+        }
+        return terms
+    }
 }
 
 enum MeetingEvent: Sendable {
@@ -107,7 +127,7 @@ final class LiveMeetingService: MeetingService {
 
             for speaker in speakers {
                 let channel = try await ChannelTranscriber(speaker: speaker, locale: locale)
-                try await channel.start()
+                try await channel.start(contextualStrings: configuration.contextualStrings)
                 channels.append(channel)
                 resultTasks.append(Task {
                     do {
@@ -200,7 +220,13 @@ final class ChannelTranscriber: @unchecked Sendable {
 
     var results: some AsyncSequence<DictationTranscriber.Result, Error> { transcriber.results }
 
-    func start() async throws {
+    func start(contextualStrings: [String]) async throws {
+        if !contextualStrings.isEmpty {
+            let context = AnalysisContext()
+            context.contextualStrings[.general] = contextualStrings
+            // Only a hint: recognition works without it, so a failure must not stop the meeting.
+            try? await analyzer.setContext(context)
+        }
         try await analyzer.start(inputSequence: inputSequence)
     }
 

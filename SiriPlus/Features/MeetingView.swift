@@ -196,7 +196,7 @@ struct MeetingView: View {
                 .font(.callout)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 80, maxHeight: 160)
-            Text("Agenda, project facts, numbers, things not to forget. They make hints more accurate.")
+            Text("Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -205,7 +205,8 @@ struct MeetingView: View {
     }
 }
 
-private struct TurnRow: View {
+/// One speaker turn; also used for saved meetings in History.
+struct TurnRow: View {
     let turn: TranscriptTurn
 
     /// Volatile text is still being recognized and may change, so it is dimmed.

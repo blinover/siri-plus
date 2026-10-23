@@ -149,6 +149,15 @@ struct MeetingModelTests {
         await meeting.stop()
     }
 
+    @Test func namesAndTermsFromNotesGoToRecognition() async {
+        let (meeting, service, _) = makeMeeting()
+        meeting.notes = "Проект: перенос в Yandex Cloud, отвечает Анна Петрова. Кластер k8s, сроки Q4, бюджет 5 млн. Yandex снова."
+        await meeting.start()
+        #expect(service.configuration?.contextualStrings == ["Проект", "Yandex", "Cloud", "Анна", "Петрова", "Кластер", "k8s", "Q4"])
+        await meeting.stop()
+        #expect(MeetingConfiguration.contextualStrings(from: "один Два три Четыре", limit: 1) == ["Два"])
+    }
+
     @Test func failedStartShowsErrorAndStaysIdle() async {
         let (meeting, service, _) = makeMeeting()
         service.startError = MeetingError.microphoneDenied
@@ -208,15 +217,33 @@ final class FakeMeetingService: MeetingService {
     }
 }
 
-final class ScriptedHints: HintService, @unchecked Sendable {
+final class ScriptedHints: HintService, SummaryService, @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [HintRequest] = []
     private var scripted = "Скажи про три года опыта."
+    private var recordedSummaries: [SummaryRequest] = []
+    private var scriptedSummary = ""
 
     var requests: [HintRequest] { lock.withLock { recorded } }
     var reply: String {
         get { lock.withLock { scripted } }
         set { lock.withLock { scripted = newValue } }
+    }
+    var summaryRequests: [SummaryRequest] { lock.withLock { recordedSummaries } }
+    var summaryReply: String {
+        get { lock.withLock { scriptedSummary } }
+        set { lock.withLock { scriptedSummary = newValue } }
+    }
+
+    func summary(for request: SummaryRequest) -> AsyncThrowingStream<String, Error> {
+        let reply = lock.withLock {
+            recordedSummaries.append(request)
+            return scriptedSummary
+        }
+        return AsyncThrowingStream { continuation in
+            continuation.yield(reply)
+            continuation.finish()
+        }
     }
 
     func hint(for request: HintRequest) -> AsyncThrowingStream<String, Error> {
