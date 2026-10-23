@@ -41,6 +41,26 @@ struct AppModelTests {
         #expect(model.messages.count == 4)
     }
 
+    @Test func conversationAboutMeetingCarriesItUntilNewConversation() async throws {
+        let service = ControlledAssistant()
+        let model = makeModel(assistant: service)
+        let meeting = MeetingRecord(startedAt: Date(), endedAt: Date(), turns: [], notes: "")
+        _ = model.send("Старый вопрос")
+        await service.waitForRequest()
+        service.complete("Ответ")
+
+        model.askAbout(meeting)
+        #expect(model.messages.isEmpty)
+        #expect(model.selectedTab == .assistant)
+        let task = try #require(model.send("Что решили?"))
+        #expect(await service.waitForRequest().meeting?.id == meeting.id)
+        service.complete("Переезд в ноябре")
+        await task.value
+
+        model.newConversation()
+        #expect(model.chatMeeting == nil)
+    }
+
     @Test func stoppedReplyKeepsReceivedText() async throws {
         let service = ControlledAssistant()
         let model = makeModel(assistant: service)
@@ -164,7 +184,7 @@ struct AppModelTests {
     }
 
     private func makeModel(
-        assistant: any AssistantService & HintService = ControlledAssistant(),
+        assistant: any AssistantService & HintService & SummaryService = ControlledAssistant(),
         screenCapture: any ScreenCapturing = StubScreenCapture(),
         credentials: Credentials = .inMemory()
     ) -> AppModel {
@@ -173,13 +193,15 @@ struct AppModelTests {
             meetingService: FakeMeetingService(),
             screenCapture: screenCapture,
             preferencesStore: PreferencesStore(defaults: UserDefaults(suiteName: UUID().uuidString)!),
-            credentials: credentials
+            credentials: credentials,
+            historyStore: MeetingHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).json")),
+            microphoneUsage: NoMicrophoneUsage()
         )
     }
 }
 
 /// Lets a test decide when and how each reply ends.
-final class ControlledAssistant: AssistantService, HintService, @unchecked Sendable {
+final class ControlledAssistant: AssistantService, HintService, SummaryService, @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: AsyncThrowingStream<String, Error>.Continuation?
     private var pendingRequest: AssistantRequest?
@@ -198,6 +220,10 @@ final class ControlledAssistant: AssistantService, HintService, @unchecked Senda
     }
 
     func hint(for request: HintRequest) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { $0.finish() }
+    }
+
+    func summary(for request: SummaryRequest) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { $0.finish() }
     }
 

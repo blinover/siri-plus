@@ -40,6 +40,9 @@ struct ChatView: View {
         .safeAreaInset(edge: .bottom) {
             GlassEffectContainer(spacing: 12) {
                 VStack(spacing: 12) {
+                    if let meeting = model.chatMeeting {
+                        meetingCard(meeting)
+                    }
                     if let snapshot = model.snapshot {
                         snapshotCard(snapshot)
                     }
@@ -58,6 +61,26 @@ struct ChatView: View {
                     .keyboardShortcut("n", modifiers: .command)
             }
         }
+    }
+
+    private func meetingCard(_ meeting: MeetingRecord) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.title2)
+                .foregroundStyle(.indigo)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(meeting.displayTitle)
+                    .font(.callout.weight(.medium))
+                    .lineLimit(1)
+                Text("Questions are answered from this meeting’s transcript. For example: “What did we decide?” or “Write a follow-up email”.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("New Conversation") { model.newConversation() }
+                .buttonStyle(.glass)
+        }
+        .padding(14)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func snapshotCard(_ snapshot: ScreenSnapshot) -> some View {

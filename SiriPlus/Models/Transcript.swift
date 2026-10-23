@@ -1,6 +1,6 @@
 import Foundation
 
-enum Speaker: String, Sendable, Hashable {
+enum Speaker: String, Codable, Sendable, Hashable {
     /// The user, captured from the microphone.
     case me
     /// Other participants, captured from the meeting app's audio.
@@ -20,7 +20,7 @@ struct TranscriptSegment: Sendable, Equatable {
     let timestamp: Date
 }
 
-struct TranscriptTurn: Identifiable, Equatable, Sendable {
+struct TranscriptTurn: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     let speaker: Speaker
     let startedAt: Date

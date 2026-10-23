@@ -133,6 +133,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var hintMode: HintMode = .questionsAndTopic
     var transcriptionLocale = systemLocale
     var capturesMicrophone = true
+    /// Meetings older than this many days are deleted from the history; 0 keeps them forever.
+    var historyRetentionDays = 0
+    /// Offers to start a meeting when a call app starts recording, and to stop it when the call ends.
+    var offersMeetingStart = true
 
     init(
         replyStyle: ReplyStyle = .brief,
@@ -144,7 +148,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         openAIAuth: AuthMethod = .account,
         hintMode: HintMode = .questionsAndTopic,
         transcriptionLocale: String = systemLocale,
-        capturesMicrophone: Bool = true
+        capturesMicrophone: Bool = true,
+        historyRetentionDays: Int = 0,
+        offersMeetingStart: Bool = true
     ) {
         self.replyStyle = replyStyle
         self.showTimestamps = showTimestamps
@@ -156,6 +162,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.hintMode = hintMode
         self.transcriptionLocale = transcriptionLocale
         self.capturesMicrophone = capturesMicrophone
+        self.historyRetentionDays = historyRetentionDays
+        self.offersMeetingStart = offersMeetingStart
     }
 
     // Settings saved by older versions lack the newer keys; keep what is there.
@@ -172,6 +180,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
+        historyRetentionDays = try container.decodeIfPresent(Int.self, forKey: .historyRetentionDays) ?? defaults.historyRetentionDays
+        offersMeetingStart = try container.decodeIfPresent(Bool.self, forKey: .offersMeetingStart) ?? defaults.offersMeetingStart
     }
 
     var selection: ModelSelection {

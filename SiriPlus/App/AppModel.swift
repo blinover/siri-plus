@@ -4,6 +4,7 @@ import Combine
 enum WorkspaceTab: String, CaseIterable, Identifiable {
     case assistant
     case meeting
+    case history
     case settings
 
     var id: String { rawValue }
@@ -12,6 +13,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         switch self {
         case .assistant: String(localized: "Assistant")
         case .meeting: String(localized: "Meeting")
+        case .history: String(localized: "History")
         case .settings: String(localized: "Settings")
         }
     }
@@ -20,6 +22,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         switch self {
         case .assistant: "sparkles"
         case .meeting: "waveform"
+        case .history: "clock.arrow.circlepath"
         case .settings: "slider.horizontal.3"
         }
     }
@@ -56,9 +59,14 @@ final class AppModel: ObservableObject {
     @Published var selectedTab: WorkspaceTab? = .assistant
     @Published var draft = ""
     @Published var preferences: AssistantPreferences {
-        didSet { preferencesStore.save(preferences) }
+        didSet {
+            preferencesStore.save(preferences)
+            if preferences.historyRetentionDays != oldValue.historyRetentionDays { history.removeExpired() }
+        }
     }
     @Published private(set) var messages: [ChatMessage] = []
+    /// The finished meeting the current conversation is about.
+    @Published private(set) var chatMeeting: MeetingRecord?
     /// Text of the reply being streamed; moved into `messages` when it ends.
     @Published private(set) var partialReply = ""
     @Published private(set) var isReplying = false
@@ -69,6 +77,8 @@ final class AppModel: ObservableObject {
     @Published var errorMessage: String?
 
     let meeting: MeetingModel
+    let history: MeetingHistory
+    let callMonitor: CallMonitor
     /// Shows the floating hint panel; set by the app scene.
     var showHintPanel: (() -> Void)?
 
@@ -82,11 +92,13 @@ final class AppModel: ObservableObject {
     private var meetingChanges: AnyCancellable?
 
     init(
-        assistant: (any AssistantService & HintService)? = nil,
+        assistant: (any AssistantService & HintService & SummaryService)? = nil,
         meetingService: any MeetingService = LiveMeetingService(),
         screenCapture: any ScreenCapturing = ScreenCaptureService(),
         preferencesStore: PreferencesStore = PreferencesStore(),
         credentials: Credentials = Credentials(),
+        historyStore: MeetingHistoryStore = MeetingHistoryStore(),
+        microphoneUsage: any MicrophoneUsageSource = CoreAudioMicrophoneUsage(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
     ) {
         let assistant = assistant ?? CloudAssistantService(
@@ -105,11 +117,15 @@ final class AppModel: ObservableObject {
         meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming) {
             currentPreferences()
         }
+        history = MeetingHistory(store: historyStore, summaries: assistant) { currentPreferences() }
+        callMonitor = CallMonitor(meeting: meeting, usage: microphoneUsage) { currentPreferences().offersMeetingStart }
         currentPreferences = { [unowned self] in self.preferences }
         accounts.hasClaudeKey = (try? credentials.claudeKey.read())?.isEmpty == false
         accounts.hasOpenAIKey = (try? credentials.openAIKey.read())?.isEmpty == false
-        // Views observing the app model also follow meeting state (menu bar icon, sidebar badge).
-        meetingChanges = meeting.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+        meeting.onFinish = { [history] in history.add($0) }
+        // Views observing the app model also follow meeting and history state (menu bar icon, sidebar badge, errors).
+        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange)
+            .sink { [weak self] in self?.objectWillChange.send() }
     }
 
     var isModelReady: Bool { accounts.isReady(preferences.selection) }
@@ -126,7 +142,7 @@ final class AppModel: ObservableObject {
         partialReply = ""
         let requestID = UUID()
         activeReplyID = requestID
-        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, selection: preferences.selection)
+        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, selection: preferences.selection, meeting: chatMeeting)
         replyTask = Task { [weak self, assistant] in
             var failure: Error?
             do {
@@ -154,10 +170,17 @@ final class AppModel: ObservableObject {
     func newConversation() {
         stopReply()
         messages = []
+        chatMeeting = nil
         draft = ""
         clearSnapshot()
         errorMessage = nil
         selectedTab = .assistant
+    }
+
+    /// Starts a new conversation about a finished meeting.
+    func askAbout(_ meeting: MeetingRecord) {
+        newConversation()
+        chatMeeting = meeting
     }
 
     func captureScreen() async {

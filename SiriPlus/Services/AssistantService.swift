@@ -4,6 +4,8 @@ struct AssistantRequest: Sendable {
     let messages: [ChatMessage]
     let replyStyle: ReplyStyle
     let selection: ModelSelection
+    /// A finished meeting the conversation is about.
+    var meeting: MeetingRecord?
 }
 
 protocol AssistantService: Sendable {
@@ -28,6 +30,17 @@ struct HintRequest: Sendable, Equatable {
 protocol HintService: Sendable {
     /// Streams a short meeting hint. A reply of "—" means no hint is needed.
     func hint(for request: HintRequest) -> AsyncThrowingStream<String, Error>
+}
+
+struct SummaryRequest: Sendable, Equatable {
+    let transcript: String
+    let notes: String
+    let selection: ModelSelection
+}
+
+protocol SummaryService: Sendable {
+    /// Streams the title, participants, summary and tasks of a finished meeting, parsed by `MeetingSummary`.
+    func summary(for request: SummaryRequest) -> AsyncThrowingStream<String, Error>
 }
 
 /// A provider-neutral prompt: every backend turns it into its own wire format.
@@ -63,16 +76,37 @@ enum AssistantPrompts {
         let style = request.replyStyle == .brief
             ? "Be brief: one to four sentences or a short list."
             : "Answer thoroughly and in a structured way, with examples when they help."
-        let system = """
+        var system = """
         You are Siri+, the user's personal assistant on their Mac. Reply in the language the user writes in; if it is unclear, reply in \(language). \(style)
         If a screenshot is attached to a message, it shows the user's screen at the moment of the question: rely on what is visible on it.
         """
+        if let meeting = request.meeting {
+            system += "\n\n" + meetingContext(meeting)
+        }
         return PreparedPrompt(
             system: system,
             turns: request.messages.map { .init(role: $0.role, text: $0.text, imageJPEG: $0.imageJPEG) },
             effort: request.replyStyle == .brief ? "low" : "medium",
-            maxTokens: 32_000
+            maxTokens: 32_000,
+            // The transcript is resent with every question about the meeting.
+            cacheSystem: request.meeting != nil
         )
+    }
+
+    static func meetingContext(_ meeting: MeetingRecord) -> String {
+        var lines = [
+            "The user asks about a finished work call. Answer from its transcript and summary below; if they do not contain the answer, say so instead of guessing. The transcript is automatic, has no punctuation and contains recognition errors. \"Me\" is the user, \"Them\" are the other participants.",
+            "<meeting>",
+            "Title: \(meeting.displayTitle)",
+            "Started: \(meeting.startedAt.formatted(.iso8601)), lasted \(Int(meeting.endedAt.timeIntervalSince(meeting.startedAt) / 60)) min",
+        ]
+        if !meeting.participants.isEmpty { lines.append("Participants: \(meeting.participants.joined(separator: ", "))") }
+        if !meeting.summary.isEmpty { lines.append("Summary:\n\(meeting.summary)") }
+        if !meeting.tasks.isEmpty { lines.append("Tasks:\n" + meeting.tasks.map { "- \($0.line)" }.joined(separator: "\n")) }
+        let notes = meeting.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !notes.isEmpty { lines.append("The user's materials for the meeting:\n\(notes)") }
+        lines += ["<transcript>", meeting.promptTranscript, "</transcript>", "</meeting>"]
+        return lines.joined(separator: "\n")
     }
 
     static func hint(_ request: HintRequest, language: String = systemLanguageName) -> PreparedPrompt {
@@ -121,10 +155,36 @@ enum AssistantPrompts {
         }
         return prompt
     }
+
+    static func summary(_ request: SummaryRequest, language: String = systemLanguageName) -> PreparedPrompt {
+        var system = """
+        You summarize a finished work call from its automatic transcript. The transcript has no punctuation and contains recognition errors, so reconstruct the meaning from context. "Me" is the user, "Them" are the other participants.
+
+        Write in the language of the conversation (if it is unclear, in \(language)). Reply exactly in this format, without Markdown headings:
+        TITLE: three to seven words naming what the meeting was about
+        PARTICIPANTS: names of the people who spoke or were addressed, comma-separated, or "—" if no names are known
+        SUMMARY:
+        three to seven short bullet points starting with "- ": what was discussed and what was decided
+        TASKS:
+        one line per agreed action item: "- owner | what to do | deadline", with "—" for an unknown owner or deadline; a single "—" if there are no action items
+
+        Do not invent facts or names that are not in the transcript or the materials.
+        """
+        let notes = request.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !notes.isEmpty {
+            system += "\n\nThe user's materials for this meeting:\n<materials>\n\(notes)\n</materials>"
+        }
+        return PreparedPrompt(
+            system: system,
+            turns: [.init(role: .user, text: "<transcript>\n\(request.transcript)\n</transcript>")],
+            effort: "low",
+            maxTokens: 4_000
+        )
+    }
 }
 
 /// Routes requests to the backend chosen in settings.
-struct CloudAssistantService: AssistantService, HintService {
+struct CloudAssistantService: AssistantService, HintService, SummaryService {
     let claudeAPI: any ModelBackend
     let claudeCode: any ModelBackend
     let openAIAPI: any ModelBackend
@@ -136,6 +196,10 @@ struct CloudAssistantService: AssistantService, HintService {
 
     func hint(for request: HintRequest) -> AsyncThrowingStream<String, Error> {
         route(AssistantPrompts.hint(request), selection: request.selection)
+    }
+
+    func summary(for request: SummaryRequest) -> AsyncThrowingStream<String, Error> {
+        route(AssistantPrompts.summary(request), selection: request.selection)
     }
 
     private func route(_ prompt: PreparedPrompt, selection: ModelSelection) -> AsyncThrowingStream<String, Error> {

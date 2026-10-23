@@ -60,6 +60,8 @@ struct WorkspaceView: View {
                         showPanel: { model.showHintPanel?() },
                         openSettings: { model.selectedTab = .settings }
                     )
+                case .history:
+                    HistoryView(history: model.history, askAbout: model.askAbout)
                 case .settings:
                     PreferencesView(model: model)
                 }
@@ -67,14 +69,14 @@ struct WorkspaceView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Errors float over the content as tinted glass instead of pushing it down.
             .overlay(alignment: .top) {
-                if let error = model.errorMessage ?? model.meeting.errorMessage {
+                if let error = model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage {
                     errorBanner(error)
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage)
+            .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage)
         }
         .frame(minWidth: 820, minHeight: 600)
         .tint(.indigo)
@@ -91,6 +93,7 @@ struct WorkspaceView: View {
             Button {
                 model.errorMessage = nil
                 model.meeting.errorMessage = nil
+                model.history.errorMessage = nil
             } label: {
                 Image(systemName: "xmark")
             }

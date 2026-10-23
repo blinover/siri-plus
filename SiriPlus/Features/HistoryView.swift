@@ -1,0 +1,237 @@
+import AppKit
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct HistoryView: View {
+    @ObservedObject var history: MeetingHistory
+    let askAbout: (MeetingRecord) -> Void
+    @State private var selectedID: UUID?
+    @State private var pendingDeletion: MeetingRecord?
+    @State private var query = ""
+
+    private var visibleRecords: [MeetingRecord] { history.records.filter { $0.matches(query) } }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            meetingList
+                .frame(minWidth: 240, idealWidth: 280, maxWidth: 320, maxHeight: .infinity)
+            Divider()
+            Group {
+                if let record = history.records.first(where: { $0.id == selectedID }) {
+                    MeetingDetail(record: record, history: history, askAbout: askAbout).id(record.id)
+                } else {
+                    ContentUnavailableView("Choose a meeting", systemImage: "clock.arrow.circlepath")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationTitle("History")
+        .navigationSubtitle("Meetings are stored on this Mac. Only the transcript goes to the model, to write the summary.")
+        .onAppear { if selectedID == nil { selectedID = history.records.first?.id } }
+        .onChange(of: history.records.first?.id) { selectedID = history.records.first?.id }
+        .searchable(text: $query, placement: .toolbar, prompt: Text("Search meetings"))
+        .confirmationDialog(
+            "Delete the meeting?",
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
+            presenting: pendingDeletion
+        ) { record in
+            Button("Delete", role: .destructive) { history.delete(record.id) }
+        } message: { _ in
+            Text("The transcript and summary are removed from this Mac.")
+        }
+    }
+
+    @ViewBuilder
+    private var meetingList: some View {
+        if history.records.isEmpty {
+            ContentUnavailableView {
+                Label("No meetings yet", systemImage: "clock.arrow.circlepath")
+            } description: {
+                Text("Finished meetings appear here with a title and a summary.")
+            }
+        } else if visibleRecords.isEmpty {
+            ContentUnavailableView.search(text: query)
+        } else {
+            List(visibleRecords, selection: $selectedID) { record in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(record.displayTitle)
+                        .lineLimit(2)
+                    Text(record.startedAt, format: .dateTime.day().month().year().hour().minute())
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+                .tag(record.id)
+                .contextMenu {
+                    Button("Delete", systemImage: "trash", role: .destructive) { pendingDeletion = record }
+                }
+            }
+        }
+    }
+}
+
+private struct MeetingDetail: View {
+    let record: MeetingRecord
+    @ObservedObject var history: MeetingHistory
+    let askAbout: (MeetingRecord) -> Void
+    @State private var title = ""
+    @State private var participants = ""
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case title, participants }
+
+    private var isSummarizing: Bool { history.summarizing.contains(record.id) }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    TextField("Meeting title", text: $title, prompt: Text(record.displayTitle))
+                        .textFieldStyle(.plain)
+                        .font(.title2.bold())
+                        .focused($focusedField, equals: .title)
+                        .onSubmit(commitTitle)
+                    Text(dateline)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                summaryCard
+                if !record.tasks.isEmpty { tasksCard }
+                participantsField
+                Text("Transcript")
+                    .font(.headline)
+                    .padding(.top, 6)
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ForEach(record.turns) { TurnRow(turn: $0) }
+                }
+            }
+            .padding(24)
+        }
+        .toolbar {
+            ToolbarItem {
+                Button("Ask About the Meeting", systemImage: "bubble.left.and.text.bubble.right") { askAbout(record) }
+                    .help("Ask questions about this meeting in the Assistant")
+            }
+            ToolbarItem {
+                Button("Copy the summary", systemImage: "doc.on.doc") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(record.markdown(includingTranscript: false), forType: .string)
+                }
+                .help("Copy the title, participants, summary and tasks as Markdown")
+            }
+            ToolbarItem {
+                Button("Save as Markdown", systemImage: "square.and.arrow.down", action: saveMarkdown)
+                    .help("Save the meeting with its transcript as a Markdown file")
+            }
+        }
+        .onAppear {
+            title = record.title
+            participants = record.participants.joined(separator: ", ")
+        }
+        // The model fills an empty title and empty names when the summary arrives.
+        .onChange(of: record.title) { title = record.title }
+        .onChange(of: record.participants) { participants = record.participants.joined(separator: ", ") }
+        .onChange(of: focusedField) { old, _ in
+            if old == .title { commitTitle() }
+            if old == .participants { commitParticipants() }
+        }
+        .onDisappear {
+            commitTitle()
+            commitParticipants()
+        }
+    }
+
+    private var dateline: String {
+        let date = record.startedAt.formatted(date: .complete, time: .shortened)
+        let duration = Duration.seconds(record.endedAt.timeIntervalSince(record.startedAt))
+            .formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
+        return "\(date) · \(duration)"
+    }
+
+    private var summaryCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Summary", systemImage: "text.alignleft")
+                    .font(.headline)
+                Spacer()
+                if isSummarizing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("Write the summary again", systemImage: "arrow.clockwise") { history.summarize(record.id) }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .help("Write the summary again")
+                }
+            }
+            if let failure = history.summaryFailures[record.id] {
+                Label(failure, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            } else if record.summary.isEmpty {
+                Text(isSummarizing ? "Writing the summary…" : "No summary yet.")
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(record.summary)
+                    .textSelection(.enabled)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(14)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private var tasksCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Tasks", systemImage: "checklist")
+                .font(.headline)
+            ForEach(record.tasks) { task in
+                Toggle(isOn: Binding(get: { task.isDone }, set: { _ in history.toggleTask(task.id, in: record.id) })) {
+                    Text(task.line)
+                        .strikethrough(task.isDone)
+                        .foregroundStyle(task.isDone ? .secondary : .primary)
+                        .textSelection(.enabled)
+                }
+                .toggleStyle(.checkbox)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private var participantsField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Participants", systemImage: "person.2")
+                .font(.headline)
+            TextField("Names, separated by commas", text: $participants)
+                .focused($focusedField, equals: .participants)
+                .onSubmit(commitParticipants)
+            Text("Names are taken from the conversation. In the transcript, “Me” is your microphone and “Them” is everyone in the call.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func saveMarkdown() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        panel.nameFieldStringValue = record.displayTitle.replacingOccurrences(of: "/", with: "-") + ".md"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try record.markdown(includingTranscript: true).write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            history.errorMessage = String(localized: "The file was not saved. \(error.localizedDescription)")
+        }
+    }
+
+    private func commitTitle() {
+        guard title.trimmingCharacters(in: .whitespacesAndNewlines) != record.title else { return }
+        history.rename(record.id, to: title)
+    }
+
+    private func commitParticipants() {
+        guard MeetingSummary.names(in: participants) != record.participants else { return }
+        history.setParticipants(record.id, from: participants)
+    }
+}
