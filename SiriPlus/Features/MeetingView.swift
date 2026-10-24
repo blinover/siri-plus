@@ -101,10 +101,11 @@ struct MeetingView: View {
                     case .idle:
                         EmptyView()
                     }
-                    if needsAccess {
+                    if needsAccess, let missing = permissions.missingSummary {
                         HStack(spacing: 8) {
-                            Label("Siri+ needs microphone and screen audio access", systemImage: "lock.shield")
+                            Label(missing, systemImage: "lock.shield")
                                 .lineLimit(1)
+                                .help("If Siri+ is already switched on in System Settings, switch it off and on again: macOS treats every new build as a new app.")
                             Button("Allow") { Task { await permissions.requestMissing() } }
                                 .buttonStyle(.glassProminent)
                                 .controlSize(.small)

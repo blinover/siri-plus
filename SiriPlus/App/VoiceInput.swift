@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import Speech
 
 /// Live dictation text: fixed words plus the part still being recognized.
 struct DictationText: Equatable, Sendable {
@@ -20,6 +21,36 @@ struct DictationText: Equatable, Sendable {
     }
 }
 
+/// One language's reading of the same speech, with the recognizer's confidence in it.
+struct DictationCandidate: Equatable, Sendable {
+    var text = DictationText()
+    private var finalConfidence: [Double] = []
+    private var volatileConfidence: [Double] = []
+
+    /// Mean word confidence so far; a model listening to another language scores far lower.
+    var score: Double {
+        let all = finalConfidence + volatileConfidence
+        return all.isEmpty ? 0 : all.reduce(0, +) / Double(all.count)
+    }
+
+    mutating func apply(_ text: String, confidence: [Double], isFinal: Bool) {
+        self.text.apply(text, isFinal: isFinal)
+        if isFinal {
+            finalConfidence += confidence
+            volatileConfidence = []
+        } else {
+            volatileConfidence = confidence
+        }
+    }
+
+    /// The candidate the user most likely spoke: the highest confidence, the first language on a tie.
+    static func best(of candidates: [DictationCandidate]) -> DictationCandidate? {
+        candidates.enumerated().max { lhs, rhs in
+            lhs.element.score == rhs.element.score ? lhs.offset > rhs.offset : lhs.element.score < rhs.element.score
+        }?.element
+    }
+}
+
 /// Siri-style voice commands: listens to the microphone, recognizes speech on this Mac,
 /// and hands the text over when the user stops talking.
 @MainActor
@@ -28,18 +59,20 @@ final class VoiceInput: ObservableObject {
         /// Silence after speech that ends the command.
         var silence: TimeInterval = 1.5
         /// Listening stops without a word after this long.
-        var noSpeech: TimeInterval = 8
+        var noSpeech: TimeInterval = 10
         var maximum: TimeInterval = 60
     }
 
     @Published private(set) var isListening = false
+    /// The most likely reading so far.
     @Published private(set) var dictation = DictationText()
     @Published var errorMessage: String?
 
     private let timing: Timing
     private var engine: AVAudioEngine?
-    private var channel: ChannelTranscriber?
-    private var results: Task<Void, Never>?
+    private var channels: [ChannelTranscriber] = []
+    private var candidates: [DictationCandidate] = []
+    private var results: [Task<Void, Never>] = []
     private var watchdog: Task<Void, Never>?
     private var lastChange = Date()
     private var startedAt = Date()
@@ -49,8 +82,9 @@ final class VoiceInput: ObservableObject {
         self.timing = timing
     }
 
-    /// Starts listening; `onFinish` receives the text when the user falls silent.
-    func start(locale: Locale, onFinish: @escaping (String) -> Void) async {
+    /// Starts listening in every given language at once; `onFinish` receives the best reading
+    /// when the user falls silent.
+    func start(locales: [Locale], onFinish: @escaping (String) -> Void) async {
         guard !isListening else { return }
         errorMessage = nil
         dictation = DictationText()
@@ -58,28 +92,45 @@ final class VoiceInput: ObservableObject {
         isListening = true
         do {
             guard await AVCaptureDevice.requestAccess(for: .audio) else { throw MeetingError.microphoneDenied }
-            let resolved = try await ChannelTranscriber.prepare(locale: locale)
-            let channel = try await ChannelTranscriber(speaker: .me, locale: resolved)
-            try await channel.start(contextualStrings: [])
+            var resolved: [Locale] = []
+            for locale in locales {
+                guard let supported = try? await ChannelTranscriber.prepare(locale: locale),
+                      !resolved.contains(where: { $0.identifier == supported.identifier }) else { continue }
+                resolved.append(supported)
+            }
+            guard !resolved.isEmpty else {
+                throw MeetingError.unsupportedLocale(locales.map(\.identifier).joined(separator: ", "))
+            }
+
+            var channels: [ChannelTranscriber] = []
+            for locale in resolved {
+                let channel = try await ChannelTranscriber(speaker: .me, locale: locale)
+                try await channel.start(contextualStrings: [])
+                channels.append(channel)
+            }
             guard isListening else {
-                await channel.finish()
+                for channel in channels { await channel.finish() }
                 return
             }
-            self.channel = channel
+            self.channels = channels
+            candidates = Array(repeating: DictationCandidate(), count: channels.count)
 
             let engine = AVAudioEngine()
-            Self.feed(engine.inputNode, to: channel)
+            Self.feed(engine.inputNode, to: channels)
             try engine.start()
             self.engine = engine
 
             startedAt = Date()
             lastChange = Date()
-            results = Task { [weak self] in
-                do {
-                    for try await result in channel.results {
-                        self?.receive(String(result.text.characters), isFinal: result.isFinal)
-                    }
-                } catch {}
+            results = channels.enumerated().map { index, channel in
+                Task { [weak self] in
+                    do {
+                        for try await result in channel.results {
+                            let confidence = result.text.runs.compactMap(\.transcriptionConfidence)
+                            self?.receive(index, String(result.text.characters), confidence: confidence, isFinal: result.isFinal)
+                        }
+                    } catch {}
+                }
             }
             watchdog = Task { [weak self] in
                 while !Task.isCancelled {
@@ -107,11 +158,28 @@ final class VoiceInput: ObservableObject {
         if deliver, !text.isEmpty { handler?(text) }
     }
 
-    private func receive(_ text: String, isFinal: Bool) {
-        guard isListening else { return }
-        let before = dictation
-        dictation.apply(text, isFinal: isFinal)
-        if dictation != before { lastChange = Date() }
+    /// The languages to listen in: the one chosen in Settings, or the first two system languages.
+    static func locales(for preferences: AssistantPreferences) -> [Locale] {
+        guard preferences.transcriptionLocale == AssistantPreferences.systemLocale else { return [preferences.speechLocale] }
+        var seen: Set<String> = []
+        var locales: [Locale] = []
+        for identifier in Locale.preferredLanguages {
+            let locale = Locale(identifier: identifier)
+            guard let language = locale.language.languageCode?.identifier, seen.insert(language).inserted else { continue }
+            locales.append(locale)
+            if locales.count == 2 { break }
+        }
+        return locales.isEmpty ? [Locale(identifier: "en-US")] : locales
+    }
+
+    private func receive(_ index: Int, _ text: String, confidence: [Double], isFinal: Bool) {
+        guard isListening, candidates.indices.contains(index) else { return }
+        candidates[index].apply(text, confidence: confidence, isFinal: isFinal)
+        let best = DictationCandidate.best(of: candidates)?.text ?? DictationText()
+        if best != dictation {
+            dictation = best
+            lastChange = Date()
+        }
     }
 
     private func checkSilence(now: Date = Date()) {
@@ -126,26 +194,24 @@ final class VoiceInput: ObservableObject {
         }
     }
 
-    /// Sends microphone buffers to the recognizer. AVAudioEngine calls the tap on its own audio queue,
+    /// Sends microphone buffers to the recognizers. AVAudioEngine calls the tap on its own audio queue,
     /// so the closure must not be isolated to the main actor (that traps at runtime); hence a nonisolated helper.
-    nonisolated private static func feed(_ input: AVAudioInputNode, to channel: ChannelTranscriber) {
+    nonisolated private static func feed(_ input: AVAudioInputNode, to channels: [ChannelTranscriber]) {
         input.installTap(onBus: 0, bufferSize: 2_048, format: input.outputFormat(forBus: 0)) { @Sendable buffer, _ in
-            channel.append(buffer)
+            for channel in channels { channel.append(buffer) }
         }
     }
 
-    /// Stops the microphone first, then lets the recognizer flush the last words into `dictation`.
+    /// Stops the microphone first, then lets the recognizers flush the last words.
     private func teardown() async {
         if let engine {
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
         }
         engine = nil
-        if let channel {
-            await channel.finish()
-        }
-        await results?.value
-        results = nil
-        channel = nil
+        for channel in channels { await channel.finish() }
+        for task in results { await task.value }
+        results = []
+        channels = []
     }
 }

@@ -24,6 +24,8 @@ xcodebuild \
     build
 
 app="build/Build/Products/Release/SiriPlus.app"
+# The same certificate on every release keeps users' macOS permissions across updates.
+bash scripts/sign.sh "$app"
 staging="build/dmg"
 rm -rf "$staging" && mkdir -p "$staging" dist
 ditto "$app" "$staging/SiriPlus.app"

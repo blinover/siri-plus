@@ -61,7 +61,10 @@ final class UpdatePrompt {
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.sharingType = .none
-        panel.contentView = NSHostingView(rootView: UpdatePromptView(updates: updates))
+        let hosting = NSHostingView(rootView: UpdatePromptView(updates: updates).frame(width: Self.size.width, height: Self.size.height))
+        // Left to itself the hosting view shrinks the window to the content's ideal size, an empty sliver.
+        hosting.sizingOptions = []
+        panel.contentView = hosting
         return panel
     }
 }

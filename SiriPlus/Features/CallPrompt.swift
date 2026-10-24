@@ -23,7 +23,11 @@ final class CallPrompt {
     private func show(_ suggestion: CallMonitor.Suggestion) {
         let panel = panel ?? makePanel()
         self.panel = panel
-        panel.contentView = NSHostingView(rootView: CallPromptView(suggestion: suggestion, monitor: monitor))
+        let hosting = NSHostingView(rootView: CallPromptView(suggestion: suggestion, monitor: monitor).frame(width: Self.size.width, height: Self.size.height))
+        // Left to itself the hosting view shrinks the window to the content's ideal size, an empty sliver.
+        hosting.sizingOptions = []
+        panel.contentView = hosting
+        panel.setContentSize(Self.size)
         guard let screen = NSScreen.main?.visibleFrame else { return }
         panel.setFrameOrigin(NSPoint(x: screen.midX - Self.size.width / 2, y: screen.maxY - Self.size.height - 8))
         panel.alphaValue = 0

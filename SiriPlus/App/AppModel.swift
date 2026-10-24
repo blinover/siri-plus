@@ -191,7 +191,7 @@ final class AppModel: ObservableObject {
             return
         }
         guard !isReplying else { return }
-        await voice.start(locale: preferences.speechLocale) { [weak self] text in
+        await voice.start(locales: VoiceInput.locales(for: preferences)) { [weak self] text in
             self?.draft = ""
             self?.send(text)
         }

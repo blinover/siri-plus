@@ -25,12 +25,15 @@ struct SiriPlusApp: App {
                 if !model.voice.isListening { Task { await model.toggleDictation() } }
             case "meeting":
                 model.selectedTab = .meeting
-                overlay.openMainWindow?()
-                NSApplication.shared.activate()
+                overlay.showMainWindow()
                 Task { await model.meeting.start() }
+            case "updates":
+                Task { await model.updates.check(userInitiated: true) }
+            case "settings":
+                model.selectedTab = .settings
+                overlay.showMainWindow()
             default:
-                overlay.openMainWindow?()
-                NSApplication.shared.activate()
+                overlay.showMainWindow()
             }
         }
     }
@@ -70,30 +73,38 @@ private struct AssistantMenu: View {
     @ObservedObject var model: AppModel
     @ObservedObject var meeting: MeetingModel
     let overlay: HintOverlay
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("Ask (⌃⌥Space)") { overlay.show() }
-        Button("Open Siri+") { showWindow() }
+        Button("Ask (⌃⌥Space)") {
+            afterMenuCloses {
+                overlay.show()
+                if model.preferences.dictatesOnShortcut, !model.voice.isListening { Task { await model.toggleDictation() } }
+            }
+        }
+        Button("Open Siri+") { afterMenuCloses(showWindow) }
         Button("New Conversation") {
-            model.newConversation()
-            showWindow()
+            afterMenuCloses {
+                model.newConversation()
+                showWindow()
+            }
         }
         Divider()
         switch meeting.phase {
         case .idle:
             Button("Start Meeting") {
-                model.selectedTab = .meeting
-                showWindow()
-                meeting.refreshSources()
-                Task { await meeting.start() }
+                afterMenuCloses {
+                    model.selectedTab = .meeting
+                    showWindow()
+                    meeting.refreshSources()
+                    Task { await meeting.start() }
+                }
             }
         case .starting:
             Text("Preparing speech recognition…")
         case .running:
-            Button("Hint Now (⌃⌥Space)") { meeting.askNow() }
-            Button("Show Hint Panel") { overlay.show() }
-            Button("Stop Meeting") { Task { await meeting.stop() } }
+            Button("Hint Now (⌃⌥Space)") { afterMenuCloses { meeting.askNow() } }
+            Button("Show Hint Panel") { afterMenuCloses { overlay.show() } }
+            Button("Stop Meeting") { afterMenuCloses { Task { await meeting.stop() } } }
         }
         Divider()
         if model.isModelReady {
@@ -101,19 +112,30 @@ private struct AssistantMenu: View {
         } else {
             Text("Sign-in required")
         }
-        Button("Check for Updates…") { Task { await model.updates.check(userInitiated: true) } }
+        Button("Check for Updates…") { afterMenuCloses { Task { await model.updates.check(userInitiated: true) } } }
         Button("Settings…") {
-            model.selectedTab = .settings
-            showWindow()
+            afterMenuCloses {
+                model.selectedTab = .settings
+                showWindow()
+            }
         }
         Divider()
         Button("Quit Siri+") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 
+    /// Menu actions run while the menu is still closing; windows opened or focused then lose focus
+    /// as soon as it closes, which made every item need a second click.
+    private func afterMenuCloses(_ action: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(120))
+            action()
+        }
+    }
+
+    /// Uses the menu bar label's `openWindow`: this menu's own one stops working once the menu has closed.
     private func showWindow() {
-        openWindow(id: "assistant")
-        NSApplication.shared.activate()
+        overlay.showMainWindow()
     }
 }
 

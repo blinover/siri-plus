@@ -192,6 +192,8 @@ final class ChannelTranscriber: @unchecked Sendable {
         preset.transcriptionOptions.insert(.punctuation)
         // Final results at short pauses let questions be detected sooner.
         preset.reportingOptions.insert(.frequentFinalization)
+        // Per-word confidence lets dictation pick the language the user actually spoke.
+        preset.attributeOptions.insert(.transcriptionConfidence)
         return preset
     }
 

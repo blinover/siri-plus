@@ -102,6 +102,7 @@ final class HintOverlay: NSObject, NSWindowDelegate {
     func show() {
         let panel = panel ?? makePanel()
         self.panel = panel
+        shownAt = Date()
         // Placed at its final spot right away; only the opacity animates, so a size change
         // during the animation cannot leave the window shifted past the screen edge.
         place(panel)
@@ -130,12 +131,25 @@ final class HintOverlay: NSObject, NSWindowDelegate {
 
     func openApp() {
         hide()
-        openMainWindow?()
-        NSApplication.shared.activate()
+        showMainWindow()
     }
+
+    /// Opens the main window, or brings it forward, and activates the app.
+    func showMainWindow() {
+        NSApplication.shared.activate()
+        openMainWindow?()
+        // An already open window may stay behind other apps without this.
+        NSApplication.shared.windows
+            .first { $0.canBecomeMain && !($0 is NSPanel) && $0.isVisible }?
+            .makeKeyAndOrderFront(nil)
+    }
+
+    /// When the panel last appeared; focus settling right after that is not a click elsewhere.
+    private var shownAt = Date.distantPast
 
     func windowDidResignKey(_ notification: Notification) {
         // Like Spotlight, a quick question goes away on click elsewhere; meeting hints stay.
+        guard Date().timeIntervalSince(shownAt) > 0.6 else { return }
         if !meeting.isRunning, !model.isReplying, !model.voice.isListening { hide() }
     }
 

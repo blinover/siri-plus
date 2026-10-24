@@ -125,6 +125,8 @@ struct MeetingModelTests {
         let (meeting, service, hints) = makeMeeting(mode: .manual)
         await meeting.start()
         service.send(.segment(.init(speaker: .them, text: "сколько это стоит", isFinal: true, timestamp: Date())))
+        // "Hint now" needs a transcript; under load the segment can arrive after a fixed delay.
+        try await eventually { !meeting.transcript.isEmpty }
         try await Task.sleep(for: .milliseconds(80))
         #expect(hints.requests.isEmpty)
 
@@ -272,5 +274,32 @@ struct DictationTextTests {
         text.apply("", isFinal: false)
         #expect(text.text == "открой календарь")
         #expect(!text.isEmpty)
+    }
+}
+
+@Suite
+struct DictationCandidateTests {
+    @Test func picksTheLanguageWithHigherConfidence() {
+        var english = DictationCandidate(), russian = DictationCandidate()
+        english.apply("Critical in stretching", confidence: [0.5, 0.6, 0.7], isFinal: false)
+        russian.apply("Открой календарь", confidence: [0.99, 0.98], isFinal: false)
+        #expect(DictationCandidate.best(of: [english, russian])?.text.text == "Открой календарь")
+
+        russian.apply("Открой календарь", confidence: [0.99, 0.98], isFinal: true)
+        russian.apply("на завтра", confidence: [0.97], isFinal: false)
+        #expect(DictationCandidate.best(of: [english, russian])?.text.text == "Открой календарь на завтра")
+    }
+
+    @Test func firstLanguageWinsWithoutConfidence() {
+        var first = DictationCandidate(), second = DictationCandidate()
+        first.apply("one", confidence: [], isFinal: false)
+        second.apply("два", confidence: [], isFinal: false)
+        #expect(DictationCandidate.best(of: [first, second])?.text.text == "one")
+    }
+
+    @Test @MainActor func chosenLanguageOverridesSystemLanguages() {
+        #expect(VoiceInput.locales(for: AssistantPreferences(transcriptionLocale: "ru-RU")).map(\.identifier) == ["ru-RU"])
+        let automatic = VoiceInput.locales(for: AssistantPreferences())
+        #expect(!automatic.isEmpty && automatic.count <= 2)
     }
 }

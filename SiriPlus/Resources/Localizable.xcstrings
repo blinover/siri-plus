@@ -775,6 +775,16 @@
         }
       }
     },
+    "If Siri+ is already switched on in System Settings, switch it off and on again: macOS treats every new build as a new app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если Siri+ в Системных настройках уже включена, выключите и снова включите её: macOS считает каждую новую сборку новым приложением."
+          }
+        }
+      }
+    },
     "Install": {
       "localizations": {
         "ru": {
@@ -1755,12 +1765,32 @@
         }
       }
     },
+    "Siri+ needs microphone access": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ нужен доступ к микрофону"
+          }
+        }
+      }
+    },
     "Siri+ needs microphone and screen audio access": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Siri+ нужен доступ к микрофону и звуку экрана"
+          }
+        }
+      }
+    },
+    "Siri+ needs screen audio access": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ нужен доступ к звуку экрана"
           }
         }
       }
@@ -1915,12 +1945,12 @@
         }
       }
     },
-    "Switch Siri+ on in this list, then come back.": {
+    "Switch Siri+ on in this list, then come back. If it is already on, switch it off and on again: macOS treats every new build as a new app.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Включите Siri+ в этом списке и вернитесь."
+            "value": "Включите Siri+ в этом списке и вернитесь. Если она уже включена, выключите и включите снова: macOS считает каждую новую сборку новым приложением."
           }
         }
       }
@@ -2305,12 +2335,12 @@
         }
       }
     },
-    "“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+.": {
+    "“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+. After an update, a switch that is already on may need to be turned off and on again.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "«Разрешить» показывает запрос macOS и добавляет Siri+ в список в Системных настройках. После включения записи экрана перезапустите Siri+."
+            "value": "«Разрешить» показывает запрос macOS и добавляет Siri+ в список в Системных настройках. После включения записи экрана перезапустите Siri+. После обновления уже включённый переключатель может понадобиться выключить и включить снова."
           }
         }
       }

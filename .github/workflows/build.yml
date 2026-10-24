@@ -42,6 +42,23 @@ jobs:
       - name: Select the newest Xcode
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
 
+      - name: Import the signing certificate
+        # Optional: without the secrets the release is signed ad hoc and users re-grant permissions after updates.
+        env:
+          P12: ${{ secrets.SIRIPLUS_SIGNING_P12 }}
+          P12_PASSWORD: ${{ secrets.SIRIPLUS_SIGNING_P12_PASSWORD }}
+        run: |
+          if [ -z "$P12" ]; then echo "No signing secret; releasing with an ad-hoc signature."; exit 0; fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p ci "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p ci "$keychain"
+          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ci "$keychain" > /dev/null
+          echo "SIRIPLUS_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          echo "SIRIPLUS_SIGNING_KEYCHAIN_PASSWORD=ci" >> "$GITHUB_ENV"
+
       - name: Build the disk image
         env:
           BUILD_NUMBER: ${{ github.run_number }}

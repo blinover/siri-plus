@@ -40,6 +40,16 @@ final class PermissionCenter: ObservableObject {
 
     var allGranted: Bool { microphone == .granted && screen == .granted }
 
+    /// What is missing, for a one-line explanation.
+    var missingSummary: String? {
+        switch (microphone == .granted, screen == .granted) {
+        case (true, true): nil
+        case (false, true): String(localized: "Siri+ needs microphone access")
+        case (true, false): String(localized: "Siri+ needs screen audio access")
+        case (false, false): String(localized: "Siri+ needs microphone and screen audio access")
+        }
+    }
+
     func status(of kind: Kind) -> Status { kind == .microphone ? microphone : screen }
 
     func refresh() {
@@ -66,7 +76,11 @@ final class PermissionCenter: ObservableObject {
             defaults.set(true, forKey: screenAskedKey)
             // Adds Siri+ to Screen & System Audio Recording and shows the system prompt.
             _ = CGRequestScreenCaptureAccess()
-        case (_, .denied):
+        case (.screen, .denied):
+            // Registers this exact build in the list too: a rebuilt, ad-hoc signed app is a new app for macOS.
+            _ = CGRequestScreenCaptureAccess()
+            openSettings(kind)
+        case (.microphone, .denied):
             openSettings(kind)
         }
         refresh()

@@ -100,7 +100,7 @@ struct PreferencesView: View {
         } header: {
             Label("Screen and Audio Access", systemImage: "lock.shield")
         } footer: {
-            footnote("“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+.")
+            footnote("“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+. After an update, a switch that is already on may need to be turned off and on again.")
         }
     }
 
@@ -118,7 +118,7 @@ struct PreferencesView: View {
                     statusBadge(isOK: false, ok: "", missing: String(localized: "Turned off"))
                     Button("Open Settings") { model.permissions.openSettings(kind) }
                         .buttonStyle(.glass)
-                        .help("Switch Siri+ on in this list, then come back.")
+                        .help("Switch Siri+ on in this list, then come back. If it is already on, switch it off and on again: macOS treats every new build as a new app.")
                 }
             }
         } label: {
