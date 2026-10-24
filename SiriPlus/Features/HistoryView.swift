@@ -14,7 +14,7 @@ struct HistoryView: View {
     var body: some View {
         HStack(spacing: 0) {
             meetingList
-                .frame(minWidth: 240, idealWidth: 280, maxWidth: 320, maxHeight: .infinity)
+                .frame(minWidth: 200, idealWidth: 240, maxWidth: 300, maxHeight: .infinity)
             Divider()
             Group {
                 if let record = history.records.first(where: { $0.id == selectedID }) {
@@ -26,7 +26,7 @@ struct HistoryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle("History")
-        .navigationSubtitle("Meetings are stored on this Mac. Only the transcript goes to the model, to write the summary.")
+        .navigationSubtitle("Stored on this Mac")
         .onAppear { if selectedID == nil { selectedID = history.records.first?.id } }
         .onChange(of: history.records.first?.id) { selectedID = history.records.first?.id }
         .searchable(text: $query, placement: .toolbar, prompt: Text("Search meetings"))
@@ -53,14 +53,15 @@ struct HistoryView: View {
             ContentUnavailableView.search(text: query)
         } else {
             List(visibleRecords, selection: $selectedID) { record in
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(record.displayTitle)
+                        .font(.callout)
                         .lineLimit(2)
                     Text(record.startedAt, format: .dateTime.day().month().year().hour().minute())
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .tag(record.id)
                 .contextMenu {
                     Button("Delete", systemImage: "trash", role: .destructive) { pendingDeletion = record }
@@ -84,28 +85,30 @@ private struct MeetingDetail: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
                     TextField("Meeting title", text: $title, prompt: Text(record.displayTitle))
                         .textFieldStyle(.plain)
-                        .font(.title2.bold())
+                        .font(.title3.bold())
                         .focused($focusedField, equals: .title)
                         .onSubmit(commitTitle)
                     Text(dateline)
-                        .font(.callout)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 summaryCard
                 if !record.tasks.isEmpty { tasksCard }
                 participantsField
                 Text("Transcript")
-                    .font(.headline)
-                    .padding(.top, 6)
-                LazyVStack(alignment: .leading, spacing: 16) {
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+                LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(record.turns) { TurnRow(turn: $0) }
                 }
             }
-            .padding(24)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
         }
         .toolbar {
             ToolbarItem {
@@ -149,10 +152,10 @@ private struct MeetingDetail: View {
     }
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("Summary", systemImage: "text.alignleft")
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
                 Spacer()
                 if isSummarizing {
                     ProgressView().controlSize(.small)
@@ -161,6 +164,7 @@ private struct MeetingDetail: View {
                         .labelStyle(.iconOnly)
                         .buttonStyle(.glass)
                         .buttonBorderShape(.circle)
+                        .controlSize(.small)
                         .help("Write the summary again")
                 }
             }
@@ -177,14 +181,14 @@ private struct MeetingDetail: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var tasksCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             Label("Tasks", systemImage: "checklist")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
             ForEach(record.tasks) { task in
                 Toggle(isOn: Binding(get: { task.isDone }, set: { _ in history.toggleTask(task.id, in: record.id) })) {
                     Text(task.line)
@@ -196,21 +200,25 @@ private struct MeetingDetail: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var participantsField: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        HStack(spacing: 8) {
             Label("Participants", systemImage: "person.2")
-                .font(.headline)
+                .labelStyle(.iconOnly)
+                .foregroundStyle(.secondary)
             TextField("Names, separated by commas", text: $participants)
+                .textFieldStyle(.plain)
                 .focused($focusedField, equals: .participants)
                 .onSubmit(commitParticipants)
-            Text("Names are taken from the conversation. In the transcript, “Me” is your microphone and “Them” is everyone in the call.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: Capsule())
+        .help("Names are taken from the conversation. In the transcript, “Me” is your microphone and “Them” is everyone in the call.")
     }
 
     private func saveMarkdown() {

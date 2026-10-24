@@ -1,0 +1,66 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Ask": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спросить"
+          }
+        }
+      }
+    },
+    "Ask Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спросить Siri+"
+          }
+        }
+      }
+    },
+    "Ask Siri+ or start a meeting.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Спросите Siri+ или начните созвон."
+          }
+        }
+      }
+    },
+    "Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+"
+          }
+        }
+      }
+    },
+    "Speak or type a question": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скажите или напишите вопрос"
+          }
+        }
+      }
+    },
+    "Start Meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начать созвон"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

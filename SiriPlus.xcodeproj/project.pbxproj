@@ -46,6 +46,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "CFF03CCE65185EAEF93568F1";
 		};
+		"406C60BB728CF440BD682A94" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/PermissionCenter.swift";
+			"sourceTree" = "<group>";
+		};
+		"D9EC1DAAEF6B64860793EFCC" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "406C60BB728CF440BD682A94";
+		};
 		"65DC8832DBF2F8882753ADF0" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -55,6 +65,26 @@
 		"F7E7988D4DEE9259257956E8" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "65DC8832DBF2F8882753ADF0";
+		};
+		"2DDFEDADC709F17FB0160366" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/UpdateModel.swift";
+			"sourceTree" = "<group>";
+		};
+		"0EA10DEBA7DA09939209E7B8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "2DDFEDADC709F17FB0160366";
+		};
+		"8F65C05FDD9E12150E9F5BBD" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/VoiceInput.swift";
+			"sourceTree" = "<group>";
+		};
+		"001BFA3F102C9D43D79622E9" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8F65C05FDD9E12150E9F5BBD";
 		};
 		"C424ED370F58E5BD53A1D19F" = {
 			"isa" = "PBXFileReference";
@@ -115,6 +145,16 @@
 		"AB3FDA65C6F1ABF38D40DFF6" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "80CECDE57D37F89C1994A377";
+		};
+		"F57709606A4E1F8456FF7DE9" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Features/UpdatePrompt.swift";
+			"sourceTree" = "<group>";
+		};
+		"23D1AEDBDC834296796D7A12" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F57709606A4E1F8456FF7DE9";
 		};
 		"DA9D5C146486BC8730759414" = {
 			"isa" = "PBXFileReference";
@@ -286,6 +326,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "4A74E1BCF432CA2BF2AB9431";
 		};
+		"AFD98FC7C8B52CE9D534CFF6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Services/UpdateService.swift";
+			"sourceTree" = "<group>";
+		};
+		"02A787C2FE38E2D91361D0F5" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "AFD98FC7C8B52CE9D534CFF6";
+		};
 		"7B594B6DB375E1BF3F23CDD6" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.plist.xml";
@@ -322,6 +372,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "D6A91D5EE14D526AABF00668";
 		};
+		"28AAD1477D5182D66D4B03B3" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder.assetcatalog";
+			"path" = "Resources/Assets.xcassets";
+			"sourceTree" = "<group>";
+		};
+		"222F0DBFFE5EB23DCD3FD16F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "28AAD1477D5182D66D4B03B3";
+		};
 		"FEA21CBDDF6230BE0845A293" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "text.plist.entitlements";
@@ -335,13 +395,17 @@
 				"6F211319D035E76D5DFA4CF6",
 				"59C77B80EFDF0D289EA6AA94",
 				"CFF03CCE65185EAEF93568F1",
+				"406C60BB728CF440BD682A94",
 				"65DC8832DBF2F8882753ADF0",
+				"2DDFEDADC709F17FB0160366",
+				"8F65C05FDD9E12150E9F5BBD",
 				"C424ED370F58E5BD53A1D19F",
 				"5995596E6D27DF401E719D8E",
 				"906A209B043E35403A13E7A8",
 				"21DD833FFC8953E6537B2BD1",
 				"508274BC523D07530772295A",
 				"80CECDE57D37F89C1994A377",
+				"F57709606A4E1F8456FF7DE9",
 				"DA9D5C146486BC8730759414",
 				"1BAF03E4BFBA4808469D1237",
 				"753D80AF9A27076F5C46157E",
@@ -359,10 +423,12 @@
 				"1C0404D71D8ABBE004FF2821",
 				"EA2FC0399B42B2F6888B0889",
 				"4A74E1BCF432CA2BF2AB9431",
+				"AFD98FC7C8B52CE9D534CFF6",
 				"7B594B6DB375E1BF3F23CDD6",
 				"DDFDA7D0CEFB8C6B7C53EE6A",
 				"64EDA7777C9BDA561C52C1A1",
 				"D6A91D5EE14D526AABF00668",
+				"28AAD1477D5182D66D4B03B3",
 				"FEA21CBDDF6230BE0845A293",
 			);
 			"path" = "SiriPlus";
@@ -375,10 +441,85 @@
 			"path" = "SiriPlus.app";
 			"sourceTree" = "BUILT_PRODUCTS_DIR";
 		};
+		"ABC00EF3CD12A87A21EFE3BE" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "SiriPlusWidget.swift";
+			"sourceTree" = "<group>";
+		};
+		"466D20E6E0D35BE063EE6B14" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "ABC00EF3CD12A87A21EFE3BE";
+		};
+		"8B34CBF4B309443717020E71" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json.xcstrings";
+			"path" = "Localizable.xcstrings";
+			"sourceTree" = "<group>";
+		};
+		"9D6282D50DF847E2C409C77E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Info.plist";
+			"sourceTree" = "<group>";
+		};
+		"87E83485745F83911E450D6E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.entitlements";
+			"path" = "SiriPlusWidget.entitlements";
+			"sourceTree" = "<group>";
+		};
+		"C92DD1663907A79AA467B5F8" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"ABC00EF3CD12A87A21EFE3BE",
+				"8B34CBF4B309443717020E71",
+				"9D6282D50DF847E2C409C77E",
+				"87E83485745F83911E450D6E",
+			);
+			"path" = "SiriPlusWidget";
+			"sourceTree" = "<group>";
+		};
+		"F231F6FE549E641636571AA6" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.app-extension";
+			"includeInIndex" = "0";
+			"path" = "SiriPlusWidget.appex";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"2D81737A052BBAAD15A6D3C1" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"466D20E6E0D35BE063EE6B14",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"7683A40AB86681224A5404DF" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"5B71436146CFF6C3F65CD55F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8B34CBF4B309443717020E71";
+		};
+		"FE608D3A8638F8175D740C08" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"5B71436146CFF6C3F65CD55F",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
 		"FBDC4F23F93125BBEEAE800C" = {
 			"isa" = "PBXGroup";
 			"children" = (
 				"38A007151ABE87CC01A5B6E9",
+				"F231F6FE549E641636571AA6",
 			);
 			"name" = "Products";
 			"sourceTree" = "<group>";
@@ -393,6 +534,7 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"1BDBD24583AAF7F81F76B976",
+				"C92DD1663907A79AA467B5F8",
 				"FBDC4F23F93125BBEEAE800C",
 				"F78A71AF8BBF8CC2F6F31354",
 			);
@@ -406,13 +548,17 @@
 				"7C449BA7B163DB3DD34886EB",
 				"586FA407F1A7055A14FBFE01",
 				"6B321BDA4F2827D9503959A6",
+				"D9EC1DAAEF6B64860793EFCC",
 				"F7E7988D4DEE9259257956E8",
+				"0EA10DEBA7DA09939209E7B8",
+				"001BFA3F102C9D43D79622E9",
 				"C58ACEE4828354AD886C5E0A",
 				"01191AB607BC683CEABAB76A",
 				"88F9099259BDC37A28929221",
 				"77E2EA81BAD7CF13CC702E85",
 				"0D430400ED0110FD3B5B83FF",
 				"AB3FDA65C6F1ABF38D40DFF6",
+				"23D1AEDBDC834296796D7A12",
 				"0558CD71C572173DFAF98732",
 				"7C1B5F04D4480FFB29BB3C39",
 				"B2A72071CD4F7626BDCE8442",
@@ -430,6 +576,7 @@
 				"1B70E94F0D5D9191AF76D510",
 				"0C86F476938A7A1F8061E776",
 				"B49C04372A512DDE3EDD4C46",
+				"02A787C2FE38E2D91361D0F5",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -448,6 +595,27 @@
 				"1ABB0BD182343F4D3D34C97F",
 				"851FDB0CDEB99AC9A62F9AFA",
 				"FC9A149D788A9166046CE039",
+				"222F0DBFFE5EB23DCD3FD16F",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"5457AB9FB521F7F7EF0268A3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F231F6FE549E641636571AA6";
+			"settings" = {
+				"ATTRIBUTES" = (
+					"RemoveHeadersOnCopy",
+				);
+			};
+		};
+		"37E8022B7B99C3249E08AE16" = {
+			"isa" = "PBXCopyFilesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"dstPath" = "";
+			"dstSubfolderSpec" = "13";
+			"name" = "Embed Foundation Extensions";
+			"files" = (
+				"5457AB9FB521F7F7EF0268A3",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -456,6 +624,7 @@
 			"buildSettings" = {
 				"CLANG_ENABLE_MODULES" = "YES";
 				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"COPY_PHASE_STRIP" = "NO";
 				"MACOSX_DEPLOYMENT_TARGET" = "26.0";
 				"SDKROOT" = "macosx";
 				"SWIFT_VERSION" = "6.0";
@@ -472,6 +641,7 @@
 			"buildSettings" = {
 				"CLANG_ENABLE_MODULES" = "YES";
 				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"COPY_PHASE_STRIP" = "NO";
 				"MACOSX_DEPLOYMENT_TARGET" = "26.0";
 				"SDKROOT" = "macosx";
 				"SWIFT_VERSION" = "6.0";
@@ -499,7 +669,7 @@
 				"INFOPLIST_FILE" = "SiriPlus/Resources/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlus/Resources/SiriPlus.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.1.0";
+				"MARKETING_VERSION" = "0.2.0";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";
@@ -512,6 +682,7 @@
 				);
 				"SWIFT_EMIT_LOC_STRINGS" = "YES";
 				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 			};
 			"name" = "Debug";
 		};
@@ -523,7 +694,7 @@
 				"INFOPLIST_FILE" = "SiriPlus/Resources/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlus/Resources/SiriPlus.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.1.0";
+				"MARKETING_VERSION" = "0.2.0";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";
@@ -536,6 +707,7 @@
 				);
 				"SWIFT_EMIT_LOC_STRINGS" = "YES";
 				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 			};
 			"name" = "Release";
 		};
@@ -548,6 +720,100 @@
 			"defaultConfigurationIsVisible" = "0";
 			"defaultConfigurationName" = "Debug";
 		};
+		"8EEBAB68363C2B0DAE00DB30" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "SiriPlusWidget";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.siriplus.app.widget";
+				"INFOPLIST_FILE" = "SiriPlusWidget/Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "SiriPlusWidget/SiriPlusWidget.entitlements";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"MARKETING_VERSION" = "0.2.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"CODE_SIGN_IDENTITY" = "-";
+				"CODE_SIGN_STYLE" = "Manual";
+				"DEVELOPMENT_TEAM" = "";
+				"ENABLE_APP_SANDBOX" = "YES";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"SKIP_INSTALL" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
+			};
+			"name" = "Debug";
+		};
+		"9B3B545F8CBA1ACB550689D3" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "SiriPlusWidget";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.siriplus.app.widget";
+				"INFOPLIST_FILE" = "SiriPlusWidget/Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "SiriPlusWidget/SiriPlusWidget.entitlements";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"MARKETING_VERSION" = "0.2.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"CODE_SIGN_IDENTITY" = "-";
+				"CODE_SIGN_STYLE" = "Manual";
+				"DEVELOPMENT_TEAM" = "";
+				"ENABLE_APP_SANDBOX" = "YES";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"SKIP_INSTALL" = "YES";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				"SWIFT_EMIT_LOC_STRINGS" = "YES";
+				"LOCALIZATION_PREFERS_STRING_CATALOGS" = "YES";
+			};
+			"name" = "Release";
+		};
+		"54C34156A8D1870FEB43616E" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"8EEBAB68363C2B0DAE00DB30",
+				"9B3B545F8CBA1ACB550689D3",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Debug";
+		};
+		"704A160D8849979DE00DDB64" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "54C34156A8D1870FEB43616E";
+			"buildPhases" = (
+				"2D81737A052BBAAD15A6D3C1",
+				"7683A40AB86681224A5404DF",
+				"FE608D3A8638F8175D740C08",
+			);
+			"buildRules" = (
+
+			);
+			"dependencies" = (
+
+			);
+			"name" = "SiriPlusWidget";
+			"productName" = "SiriPlusWidget";
+			"productReference" = "F231F6FE549E641636571AA6";
+			"productType" = "com.apple.product-type.app-extension";
+		};
+		"5632E9FDC70F2DC0B2D4E983" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "98F54143AB4E86B28C3AFEE0";
+			"proxyType" = "1";
+			"remoteGlobalIDString" = "704A160D8849979DE00DDB64";
+			"remoteInfo" = "SiriPlusWidget";
+		};
+		"4DA75641BEA61A776F463463" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "704A160D8849979DE00DDB64";
+			"targetProxy" = "5632E9FDC70F2DC0B2D4E983";
+		};
 		"C13732C8E715C9BEE4FA51C9" = {
 			"isa" = "PBXNativeTarget";
 			"buildConfigurationList" = "B483F6EB73610DE752E457A0";
@@ -555,12 +821,13 @@
 				"BCE16DD0260827ECF338C787",
 				"7561BFB015D8F536760CB671",
 				"0189424A5A60FED329FA868E",
+				"37E8022B7B99C3249E08AE16",
 			);
 			"buildRules" = (
 
 			);
 			"dependencies" = (
-
+				"4DA75641BEA61A776F463463",
 			);
 			"name" = "SiriPlus";
 			"productName" = "SiriPlus";
@@ -588,6 +855,7 @@
 			"projectRoot" = "";
 			"targets" = (
 				"C13732C8E715C9BEE4FA51C9",
+				"704A160D8849979DE00DDB64",
 			);
 		};
 	};

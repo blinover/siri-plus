@@ -79,6 +79,9 @@ final class AppModel: ObservableObject {
     let meeting: MeetingModel
     let history: MeetingHistory
     let callMonitor: CallMonitor
+    let updates: UpdateModel
+    let voice: VoiceInput
+    let permissions = PermissionCenter()
     /// Shows the floating hint panel; set by the app scene.
     var showHintPanel: (() -> Void)?
 
@@ -99,6 +102,7 @@ final class AppModel: ObservableObject {
         credentials: Credentials = Credentials(),
         historyStore: MeetingHistoryStore = MeetingHistoryStore(),
         microphoneUsage: any MicrophoneUsageSource = CoreAudioMicrophoneUsage(),
+        updateChecker: any UpdateChecking = GitHubUpdateChecker(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
     ) {
         let assistant = assistant ?? CloudAssistantService(
@@ -119,12 +123,14 @@ final class AppModel: ObservableObject {
         }
         history = MeetingHistory(store: historyStore, summaries: assistant) { currentPreferences() }
         callMonitor = CallMonitor(meeting: meeting, usage: microphoneUsage) { currentPreferences().offersMeetingStart }
+        updates = UpdateModel(checker: updateChecker) { currentPreferences().checksForUpdates }
+        voice = VoiceInput()
         currentPreferences = { [unowned self] in self.preferences }
         accounts.hasClaudeKey = (try? credentials.claudeKey.read())?.isEmpty == false
         accounts.hasOpenAIKey = (try? credentials.openAIKey.read())?.isEmpty == false
         meeting.onFinish = { [history] in history.add($0) }
         // Views observing the app model also follow meeting and history state (menu bar icon, sidebar badge, errors).
-        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange)
+        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange)
             .sink { [weak self] in self?.objectWillChange.send() }
     }
 
@@ -178,6 +184,29 @@ final class AppModel: ObservableObject {
     }
 
     /// Starts a new conversation about a finished meeting.
+    /// Starts or stops a spoken command. The text is sent when the user falls silent or stops it.
+    func toggleDictation() async {
+        if voice.isListening {
+            await voice.stop(deliver: true)
+            return
+        }
+        guard !isReplying else { return }
+        await voice.start(locale: preferences.speechLocale) { [weak self] text in
+            self?.draft = ""
+            self?.send(text)
+        }
+        if let error = voice.errorMessage { errorMessage = error }
+    }
+
+    /// Stops listening and leaves the recognized words in the text field for editing.
+    func keepDictationAsDraft() async {
+        guard voice.isListening else { return }
+        await voice.stop(deliver: false)
+        // Stopping flushes the last words, so the text is read afterwards.
+        let text = voice.dictation.text
+        if !text.isEmpty { draft = text }
+    }
+
     func askAbout(_ meeting: MeetingRecord) {
         newConversation()
         chatMeeting = meeting

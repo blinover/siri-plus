@@ -2,9 +2,11 @@ import SwiftUI
 
 @main
 struct SiriPlusApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var model: AppModel
     @State private var overlay: HintOverlay
     @State private var callPrompt: CallPrompt
+    @State private var updatePrompt: UpdatePrompt
 
     init() {
         let model = AppModel()
@@ -14,6 +16,23 @@ struct SiriPlusApp: App {
         _overlay = State(initialValue: overlay)
         _callPrompt = State(initialValue: CallPrompt(monitor: model.callMonitor))
         model.callMonitor.start()
+        _updatePrompt = State(initialValue: UpdatePrompt(updates: model.updates))
+        model.updates.start()
+        AppDelegate.openURL = { url in
+            switch url.host() {
+            case "ask":
+                overlay.show()
+                if !model.voice.isListening { Task { await model.toggleDictation() } }
+            case "meeting":
+                model.selectedTab = .meeting
+                overlay.openMainWindow?()
+                NSApplication.shared.activate()
+                Task { await model.meeting.start() }
+            default:
+                overlay.openMainWindow?()
+                NSApplication.shared.activate()
+            }
+        }
     }
 
     var body: some Scene {
@@ -21,7 +40,7 @@ struct SiriPlusApp: App {
         Window("Siri+", id: "assistant") {
             WorkspaceView(model: model)
         }
-        .defaultSize(width: 1080, height: 760)
+        .defaultSize(width: 880, height: 600)
         .windowResizability(.contentMinSize)
 
         MenuBarExtra {
@@ -82,6 +101,7 @@ private struct AssistantMenu: View {
         } else {
             Text("Sign-in required")
         }
+        Button("Check for Updates…") { Task { await model.updates.check(userInitiated: true) } }
         Button("Settings…") {
             model.selectedTab = .settings
             showWindow()
@@ -94,5 +114,15 @@ private struct AssistantMenu: View {
     private func showWindow() {
         openWindow(id: "assistant")
         NSApplication.shared.activate()
+    }
+}
+
+/// Receives siriplus:// links from the widget: "ask" opens the listening panel, "meeting" starts a meeting.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    static var openURL: ((URL) -> Void)?
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        urls.forEach { Self.openURL?($0) }
     }
 }

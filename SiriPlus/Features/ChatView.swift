@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ChatView: View {
     @ObservedObject var model: AppModel
+    @FocusState private var isComposerFocused: Bool
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -9,14 +10,14 @@ struct ChatView: View {
                 if model.messages.isEmpty {
                     welcome
                 } else {
-                    LazyVStack(alignment: .leading, spacing: 24) {
+                    LazyVStack(alignment: .leading, spacing: 16) {
                         ForEach(model.messages) { message in
                             MessageRow(message: message, showTimestamp: model.preferences.showTimestamps)
                                 .id(message.id)
                         }
                         if model.isReplying {
                             if model.partialReply.isEmpty {
-                                ProgressView("Preparing an answer…").controlSize(.small)
+                                ProgressView().controlSize(.small).padding(.leading, 30)
                             } else {
                                 MessageRow(
                                     message: ChatMessage(role: .assistant, text: model.partialReply),
@@ -26,7 +27,8 @@ struct ChatView: View {
                         }
                         Color.clear.frame(height: 1).id("bottom")
                     }
-                    .padding(28)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                 }
             }
             .onChange(of: model.messages.count) {
@@ -38,8 +40,8 @@ struct ChatView: View {
         }
         // Messages scroll under the floating glass composer.
         .safeAreaInset(edge: .bottom) {
-            GlassEffectContainer(spacing: 12) {
-                VStack(spacing: 12) {
+            GlassEffectContainer(spacing: 8) {
+                VStack(spacing: 8) {
                     if let meeting = model.chatMeeting {
                         meetingCard(meeting)
                     }
@@ -49,68 +51,83 @@ struct ChatView: View {
                     composer
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 20)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
         }
         .navigationTitle("Assistant")
-        .navigationSubtitle("Your context. One conversation.")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
                     // The app has no main menu (menu bar only), so the shortcut lives on the button.
                     .keyboardShortcut("n", modifiers: .command)
+                    .help("New Conversation (⌘N)")
             }
         }
+        .onAppear { isComposerFocused = true }
     }
 
+    // MARK: Cards above the composer
+
     private func meetingCard(_ meeting: MeetingRecord) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.title2)
                 .foregroundStyle(.indigo)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(meeting.displayTitle)
                     .font(.callout.weight(.medium))
                     .lineLimit(1)
                 Text("Questions are answered from this meeting’s transcript. For example: “What did we decide?” or “Write a follow-up email”.")
                     .font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            Spacer()
-            Button("New Conversation") { model.newConversation() }
+            Spacer(minLength: 4)
+            Button("New Conversation", systemImage: "xmark") { model.newConversation() }
+                .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .help("New Conversation (⌘N)")
         }
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func snapshotCard(_ snapshot: ScreenSnapshot) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             Image(nsImage: snapshot.image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 112, height: 68)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(width: 64, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
                 .accessibilityLabel("Screenshot of the main display")
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text("Screenshot · \(snapshot.createdAt.formatted(date: .omitted, time: .shortened))")
                     .font(.callout.weight(.medium))
                 Text("It will be sent with your next message.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Spacer()
-            Button("Remove", role: .destructive) { model.clearSnapshot() }
+            Spacer(minLength: 4)
+            Button("Remove", systemImage: "xmark", role: .destructive) { model.clearSnapshot() }
+                .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .help("Remove")
         }
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    // MARK: Empty state
+
     private var welcome: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Image(systemName: "sparkles.rectangle.stack")
-                .font(.system(size: 42, weight: .light))
-                .foregroundStyle(.indigo)
-            Text("Where shall we start?").font(.system(size: 32, weight: .semibold))
+        VStack(spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(.linearGradient(colors: [.blue, .purple, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text("Where shall we start?").font(.title2.weight(.semibold))
             Group {
                 if model.isModelReady {
                     Text("Ask anything, or take a screenshot and I’ll look at it.")
@@ -118,72 +135,114 @@ struct ChatView: View {
                     Text("To get answers, sign in to Claude or ChatGPT in Settings.")
                 }
             }
-            .font(.title3)
+            .font(.callout)
             .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            .multilineTextAlignment(.center)
 
-            HStack(spacing: 12) {
-                suggestion(String(localized: "Explain what’s on the screen"), symbol: "rectangle.dashed")
-                suggestion(String(localized: "Help me with a question"), symbol: "text.bubble")
+            GlassEffectContainer(spacing: 8) {
+                HStack(spacing: 8) {
+                    suggestion(String(localized: "Explain what’s on the screen"), symbol: "rectangle.dashed")
+                    suggestion(String(localized: "Help me with a question"), symbol: "text.bubble")
+                }
             }
-            Label("Screenshots are taken only when you click the button", systemImage: "hand.raised")
-                .font(.caption).foregroundStyle(.secondary)
+            .padding(.top, 4)
         }
-        .frame(maxWidth: 660, alignment: .leading)
-        .padding(36)
-        .padding(.top, 30)
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.top, 70)
     }
 
     private func suggestion(_ title: String, symbol: String) -> some View {
-        Button { model.draft = title } label: {
+        Button {
+            model.draft = title
+            isComposerFocused = true
+        } label: {
             Label(title, systemImage: symbol)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 6)
+                .font(.callout)
         }
         .buttonStyle(.glass)
-        .controlSize(.large)
     }
 
-    private var composer: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("Type a request…", text: $model.draft, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineLimit(2...6)
-                .font(.body)
-                .accessibilityLabel("Request text")
+    // MARK: Composer
 
-            HStack {
-                Button {
-                    Task { await model.captureScreen() }
-                } label: {
-                    if model.isCapturing {
-                        Label("Capturing…", systemImage: "camera.viewfinder")
-                    } else {
-                        Label("Screenshot", systemImage: "camera.viewfinder")
-                    }
-                }
-                .buttonStyle(.glass)
-                .disabled(model.isCapturing)
-                .help("Capture the main display without the Siri+ window. macOS will ask for permission.")
-                Spacer()
-                if model.isReplying {
-                    Button("Stop", systemImage: "stop.fill") { model.stopReply() }
-                        .buttonStyle(.glass)
+    /// One glass capsule: screenshot, text, send.
+    private var composer: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            Button {
+                Task { await model.captureScreen() }
+            } label: {
+                if model.isCapturing {
+                    ProgressView().controlSize(.small)
                 } else {
-                    Button("Send", systemImage: "arrow.up") {
-                        model.send(model.draft)
-                        model.draft = ""
-                    }
-                    .buttonStyle(.glassProminent)
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Label("Screenshot", systemImage: "camera.viewfinder")
                 }
             }
-            Text("⌘↩ send · ⌘N new conversation · history is kept until the app quits")
-                .font(.caption2).foregroundStyle(.secondary)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .disabled(model.isCapturing)
+            .help("Capture the main display without the Siri+ window. macOS will ask for permission.")
+
+            if model.voice.isListening {
+                Group {
+                    if model.voice.dictation.isEmpty {
+                        Text("Listening…").foregroundStyle(.secondary)
+                    } else {
+                        Text(model.voice.dictation.text)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 5)
+                .contentShape(Rectangle())
+                // Clicking the text stops listening and leaves the words to edit.
+                .onTapGesture { Task { await model.keepDictationAsDraft() } }
+            } else {
+                TextField("Type a request…", text: $model.draft, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...6)
+                    .focused($isComposerFocused)
+                    .padding(.vertical, 5)
+                    .accessibilityLabel("Request text")
+                    .onSubmit(send)
+            }
+
+            Button {
+                Task { await model.toggleDictation() }
+            } label: {
+                Label("Dictate (⌃⌥Space)", systemImage: model.voice.isListening ? "waveform" : "mic.fill")
+                    .symbolEffect(.variableColor.iterative, isActive: model.voice.isListening)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .tint(model.voice.isListening ? .red : nil)
+            .disabled(model.isReplying)
+            .help(model.voice.isListening ? String(localized: "Stop and send") : String(localized: "Dictate (⌃⌥Space)"))
+
+            if model.isReplying {
+                Button("Stop", systemImage: "stop.fill") { model.stopReply() }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .help("Stop")
+            } else {
+                Button("Send", systemImage: "arrow.up", action: send)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.glassProminent)
+                    .buttonBorderShape(.circle)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Send (Return)")
+            }
         }
-        .padding(18)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(6)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    private func send() {
+        guard model.send(model.draft) != nil else { return }
+        model.draft = ""
     }
 }
 
@@ -192,13 +251,13 @@ private struct MessageRow: View {
     let showTimestamp: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: message.role == .user ? "person.crop.circle" : "sparkles")
-                .font(.title3)
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: message.role == .user ? "person.crop.circle.fill" : "sparkles")
+                .font(.body)
                 .foregroundStyle(message.role == .user ? Color.secondary : Color.indigo)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
                     Group {
                         if message.role == .user {
                             Text("You")
@@ -206,19 +265,20 @@ private struct MessageRow: View {
                             Text(verbatim: "Siri+")
                         }
                     }
-                    .font(.callout.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     if showTimestamp {
                         Text(message.createdAt, style: .time)
-                            .font(.caption).foregroundStyle(.tertiary)
+                            .font(.caption2).foregroundStyle(.tertiary)
                     }
-                }
-                if message.imageJPEG != nil {
-                    Label("Screenshot", systemImage: "photo")
-                        .font(.caption).foregroundStyle(.secondary)
+                    if message.imageJPEG != nil {
+                        Label("Screenshot", systemImage: "photo")
+                            .labelStyle(.iconOnly)
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
                 }
                 Text(message.text)
                     .textSelection(.enabled)
-                    .lineSpacing(5)
+                    .lineSpacing(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

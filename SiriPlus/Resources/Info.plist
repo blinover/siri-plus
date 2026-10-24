@@ -14,6 +14,14 @@
     <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LSMinimumSystemVersion</key><string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>LSUIElement</key><true/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key><string>dev.siriplus.app</string>
+            <key>CFBundleURLSchemes</key><array><string>siriplus</string></array>
+        </dict>
+    </array>
+    <key>SiriPlusUpdateRepository</key><string>rtmo0/siri-plus</string>
     <key>NSMicrophoneUsageDescription</key><string>Siri+ recognizes your voice during a meeting on this Mac so hints follow both sides of the conversation.</string>
     <key>NSSpeechRecognitionUsageDescription</key><string>Siri+ turns meeting speech into text on this Mac.</string>
     <key>NSAudioCaptureUsageDescription</key><string>Siri+ listens to the meeting app’s audio to give hints on the topic of the conversation.</string>

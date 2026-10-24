@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MeetingView: View {
     @ObservedObject var meeting: MeetingModel
+    @ObservedObject var permissions: PermissionCenter
     let isModelReady: Bool
     let showPanel: () -> Void
     let openSettings: () -> Void
@@ -13,11 +14,11 @@ struct MeetingView: View {
                 .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             hintsColumn
-                .frame(minWidth: 300, idealWidth: 360, maxWidth: 420, maxHeight: .infinity)
+                .frame(minWidth: 260, idealWidth: 300, maxWidth: 360, maxHeight: .infinity)
         }
         .safeAreaInset(edge: .top) { statusBar }
         .navigationTitle("Meeting")
-        .navigationSubtitle("Speech is recognized on this Mac. Only the latest part of the transcript goes to the model, when a hint is needed.")
+        .navigationSubtitle("On-device speech recognition")
         .toolbar { toolbarContent }
         .onAppear { meeting.refreshSources() }
     }
@@ -34,7 +35,7 @@ struct MeetingView: View {
                         Text(verbatim: source.name).tag(source.id)
                     }
                 }
-                .frame(minWidth: 180)
+                .frame(minWidth: 150)
                 .help("Their audio")
             }
             ToolbarItem {
@@ -78,45 +79,56 @@ struct MeetingView: View {
     @ViewBuilder
     private var statusBar: some View {
         let showsSignIn = !isModelReady
-        if meeting.phase != .idle || showsSignIn {
+        let needsAccess = !permissions.allGranted && meeting.phase == .idle
+        if meeting.phase != .idle || showsSignIn || needsAccess {
             GlassEffectContainer(spacing: 10) {
                 HStack(spacing: 10) {
                     switch meeting.phase {
                     case .starting:
                         Label("Preparing speech recognition…", systemImage: "waveform")
-                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
                             .glassEffect()
                     case .running:
-                        HStack(spacing: 16) {
+                        HStack(spacing: 12) {
                             Label("Meeting in progress", systemImage: "record.circle")
                                 .foregroundStyle(.red)
                             LevelView(title: Speaker.them.title, level: meeting.levels[.them] ?? 0)
                             LevelView(title: Speaker.me.title, level: meeting.levels[.me] ?? 0)
                         }
-                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
                         .glassEffect()
-                        Text("Let the participants know you use an assistant.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        .help("Let the participants know you use an assistant.")
                     case .idle:
                         EmptyView()
+                    }
+                    if needsAccess {
+                        HStack(spacing: 8) {
+                            Label("Siri+ needs microphone and screen audio access", systemImage: "lock.shield")
+                                .lineLimit(1)
+                            Button("Allow") { Task { await permissions.requestMissing() } }
+                                .buttonStyle(.glassProminent)
+                                .controlSize(.small)
+                        }
+                        .padding(.leading, 10).padding(.trailing, 4).padding(.vertical, 4)
+                        .glassEffect(.regular.tint(.orange.opacity(0.2)))
                     }
                     Spacer(minLength: 0)
                     if showsSignIn {
                         HStack(spacing: 8) {
                             Label("Without a signed-in model the transcript works, but hints don’t.", systemImage: "person.badge.key")
+                                .lineLimit(1)
                             Button("Sign In", action: openSettings)
                                 .buttonStyle(.glassProminent)
                                 .controlSize(.small)
                         }
-                        .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 6)
+                        .padding(.leading, 10).padding(.trailing, 4).padding(.vertical, 4)
                         .glassEffect(.regular.tint(.orange.opacity(0.2)))
                     }
                 }
-                .font(.callout)
+                .font(.caption)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
         }
     }
 
@@ -135,14 +147,15 @@ struct MeetingView: View {
                             Text("Choose the call app and click Start. Headphones work best: then your microphone doesn’t repeat the other side.")
                         }
                     }
-                    .padding(.top, 60)
+                    .padding(.top, 40)
                 } else {
-                    LazyVStack(alignment: .leading, spacing: 16) {
+                    LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(meeting.transcript.turns) { turn in
                             TurnRow(turn: turn).id(turn.id)
                         }
                     }
-                    .padding(24)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
                 }
             }
             .onChange(of: meeting.transcript.turns.last?.text) {
@@ -158,9 +171,8 @@ struct MeetingView: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
-                .controlSize(.large)
                 .help("Copy the transcript")
-                .padding(20)
+                .padding(14)
             }
         }
     }
@@ -169,13 +181,14 @@ struct MeetingView: View {
 
     private var hintsColumn: some View {
         ScrollView {
-            GlassEffectContainer(spacing: 14) {
-                VStack(alignment: .leading, spacing: 14) {
+            GlassEffectContainer(spacing: 10) {
+                VStack(alignment: .leading, spacing: 10) {
                     notesEditor
                     if meeting.hints.contains(where: { !$0.isEmptyAnswer || $0.failure != nil }) {
                         Text("Hints")
-                            .font(.headline)
-                            .padding(.top, 6)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
                     }
                     ForEach(meeting.hints.reversed()) { hint in
                         if !hint.isEmptyAnswer || hint.failure != nil {
@@ -183,25 +196,32 @@ struct MeetingView: View {
                         }
                     }
                 }
-                .padding(18)
+                .padding(14)
             }
         }
     }
 
     private var notesEditor: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Label("Meeting notes", systemImage: "note.text")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
+                .help("Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.")
             TextEditor(text: $meeting.notes)
                 .font(.callout)
                 .scrollContentBackground(.hidden)
-                .frame(minHeight: 80, maxHeight: 160)
-            Text("Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .frame(minHeight: 60, maxHeight: 140)
+                .overlay(alignment: .topLeading) {
+                    if meeting.notes.isEmpty {
+                        Text("Agenda, project facts, numbers, things not to forget. They make hints more accurate.")
+                            .font(.callout)
+                            .foregroundStyle(.tertiary)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
         }
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -218,7 +238,7 @@ struct TurnRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text(turn.speaker.title)
                     .font(.caption.weight(.semibold))
@@ -229,7 +249,7 @@ struct TurnRow: View {
             }
             Text(styledText)
                 .textSelection(.enabled)
-                .lineSpacing(3)
+                .lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -239,7 +259,7 @@ private struct HintCard: View {
     let hint: MeetingHint
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Label(hint.kind.title, systemImage: hint.kind == .question ? "questionmark.bubble" : "lightbulb")
                     .font(.caption.weight(.semibold))
@@ -262,8 +282,8 @@ private struct HintCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -276,11 +296,11 @@ private struct LevelView: View {
             Text(title).font(.caption).foregroundStyle(.secondary)
             Capsule()
                 .fill(.quaternary)
-                .frame(width: 80, height: 6)
+                .frame(width: 56, height: 5)
                 .overlay(alignment: .leading) {
                     Capsule()
                         .fill(level > 0.05 ? Color.green : Color.secondary)
-                        .frame(width: 80 * CGFloat(level), height: 6)
+                        .frame(width: 56 * CGFloat(level), height: 5)
                         .animation(.smooth(duration: 0.15), value: level)
                 }
         }

@@ -5,49 +5,13 @@ struct WorkspaceView: View {
 
     var body: some View {
         NavigationSplitView {
-            VStack(alignment: .leading, spacing: 24) {
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles")
-                        .font(.title2)
-                        .foregroundStyle(.indigo)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: "Siri+").font(.title2.bold())
-                        Text("Personal assistant").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 24)
-
-                List(WorkspaceTab.allCases, selection: $model.selectedTab) { tab in
-                    Label(tab.title, systemImage: tab.symbol)
-                        .padding(.vertical, 6)
-                        .tag(tab)
-                }
-                .listStyle(.sidebar)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    if model.meeting.isRunning {
-                        Label("Meeting in progress", systemImage: "record.circle")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.red)
-                    }
-                    Group {
-                        if model.isModelReady {
-                            Label("\(model.preferences.provider.title) connected", systemImage: "circle.inset.filled")
-                                .foregroundStyle(.indigo)
-                        } else {
-                            Label("Sign-in required", systemImage: "circle.inset.filled")
-                                .foregroundStyle(.orange)
-                        }
-                    }
-                    .font(.caption.weight(.semibold))
-                    Text("Speech is recognized\non this Mac.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(18)
+            List(WorkspaceTab.allCases, selection: $model.selectedTab) { tab in
+                Label(tab.title, systemImage: tab.symbol)
+                    .tag(tab)
             }
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
+            .listStyle(.sidebar)
+            .safeAreaInset(edge: .bottom) { statusCapsule }
+            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
         } detail: {
             Group {
                 switch model.selectedTab ?? .assistant {
@@ -56,6 +20,7 @@ struct WorkspaceView: View {
                 case .meeting:
                     MeetingView(
                         meeting: model.meeting,
+                        permissions: model.permissions,
                         isModelReady: model.isModelReady,
                         showPanel: { model.showHintPanel?() },
                         openSettings: { model.selectedTab = .settings }
@@ -71,16 +36,39 @@ struct WorkspaceView: View {
             .overlay(alignment: .top) {
                 if let error = model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage {
                     errorBanner(error)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 6)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
             .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage)
         }
-        .frame(minWidth: 820, minHeight: 600)
+        .frame(minWidth: 720, minHeight: 480)
         .tint(.indigo)
         .task { await model.refreshAccounts() }
+    }
+
+    /// One line: what the assistant is connected to, or that a meeting is being recorded.
+    private var statusCapsule: some View {
+        Group {
+            if model.meeting.isRunning {
+                Label("Meeting in progress", systemImage: "record.circle")
+                    .foregroundStyle(.red)
+            } else if model.isModelReady {
+                Label("\(model.preferences.provider.title) connected", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Label("Sign-in required", systemImage: "exclamationmark.circle.fill")
+                    .foregroundStyle(.orange)
+            }
+        }
+        .font(.caption.weight(.medium))
+        .lineLimit(1)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .glassEffect(.regular, in: Capsule())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
     }
 
     private func errorBanner(_ error: String) -> some View {
@@ -103,7 +91,8 @@ struct WorkspaceView: View {
             .accessibilityLabel("Dismiss the error")
         }
         .font(.callout)
-        .padding(14)
-        .glassEffect(.regular.tint(.orange.opacity(0.25)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular.tint(.orange.opacity(0.25)), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }

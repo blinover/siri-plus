@@ -6,7 +6,12 @@ import SwiftUI
 /// Also owns the global shortcut that summons it.
 @MainActor
 final class HintOverlay: NSObject, NSWindowDelegate {
-    static let size = NSSize(width: 400, height: 560)
+    /// Width of the glass card.
+    static let cardWidth: CGFloat = 360
+    /// Gap between the card and the top and right edges of the screen, as macOS notifications and widgets keep.
+    static let edgeInset: CGFloat = 8
+    /// Transparent room left of and below the card for its glow; the other sides touch the screen edge.
+    static let margin: CGFloat = 20
 
     private let model: AppModel
     private let meeting: MeetingModel
@@ -30,25 +35,85 @@ final class HintOverlay: NSObject, NSWindowDelegate {
 
     var isVisible: Bool { panel?.isVisible == true }
 
+    /// The screen the user works on: the one under the pointer.
+    private var activeScreen: NSRect? {
+        let pointer = NSEvent.mouseLocation
+        return (NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? NSScreen.main)?.visibleFrame
+    }
+
+    /// The window sits in the top-right corner of the screen's usable area, so the card is
+    /// `edgeInset` from both edges and no part of the window leaves the screen.
+    private func frame(cardHeight: CGFloat, on screen: NSRect) -> NSRect {
+        let width = Self.cardWidth + Self.margin + Self.edgeInset
+        let height = min(cardHeight + Self.margin + Self.edgeInset, screen.height)
+        return NSRect(x: screen.maxX - width, y: screen.maxY - height, width: width, height: height)
+    }
+
+    private var cardHeight: CGFloat = 120
+
+    private static let anchorKey = "panel.topRight"
+    /// Where the user dragged the panel: its window's top-right corner. Nil keeps it in the screen corner.
+    private var anchor: NSPoint? {
+        get { UserDefaults.standard.string(forKey: Self.anchorKey).map(NSPointFromString) }
+        set { UserDefaults.standard.set(newValue.map(NSStringFromPoint), forKey: Self.anchorKey) }
+    }
+    /// True while the overlay itself moves the window, so only the user's drags change the anchor.
+    private var isPlacing = false
+
+    /// The frame for the current card height: at the user's spot if it is still on a screen,
+    /// otherwise in the top-right corner of the screen under the pointer.
+    private func placement() -> NSRect? {
+        if let anchor, let screen = NSScreen.screens.first(where: { NSMouseInRect(NSPoint(x: anchor.x - 1, y: anchor.y - 1), $0.frame, false) })?.visibleFrame {
+            var frame = frame(cardHeight: cardHeight, on: screen)
+            frame.origin = NSPoint(x: anchor.x - frame.width, y: anchor.y - frame.height)
+            // Keep the whole card on that screen.
+            frame.origin.x = min(max(frame.origin.x, screen.minX), screen.maxX - frame.width)
+            frame.origin.y = min(max(frame.origin.y, screen.minY), screen.maxY - frame.height)
+            return frame
+        }
+        return activeScreen.map { frame(cardHeight: cardHeight, on: $0) }
+    }
+
+    private func place(_ panel: NSPanel) {
+        guard let frame = placement() else { return }
+        isPlacing = true
+        panel.setFrame(frame, display: true)
+        isPlacing = false
+    }
+
+    /// Called by the view whenever the card's height changes; the top edge stays where it is.
+    func fit(cardHeight: CGFloat) {
+        self.cardHeight = cardHeight
+        guard let panel, panel.isVisible else { return }
+        place(panel)
+    }
+
+    func windowDidMove(_ notification: Notification) {
+        guard !isPlacing, let panel else { return }
+        anchor = NSPoint(x: panel.frame.maxX, y: panel.frame.maxY)
+    }
+
+    /// Puts the panel back into the screen corner.
+    func resetPosition() {
+        anchor = nil
+        if let panel, panel.isVisible { place(panel) }
+    }
+
     func show() {
         let panel = panel ?? makePanel()
         self.panel = panel
-        guard let screen = NSScreen.main?.visibleFrame else { return }
-        let target = NSPoint(x: screen.maxX - Self.size.width - 12, y: screen.maxY - Self.size.height - 12)
-        if !panel.isVisible {
-            // Slide in from the right edge, as Siri does.
-            panel.setFrameOrigin(NSPoint(x: target.x + 40, y: target.y))
-            panel.alphaValue = 0
-        }
+        // Placed at its final spot right away; only the opacity animates, so a size change
+        // during the animation cannot leave the window shifted past the screen edge.
+        place(panel)
+        if !panel.isVisible { panel.alphaValue = 0 }
         if meeting.isRunning {
             panel.orderFrontRegardless()
         } else {
             panel.makeKeyAndOrderFront(nil)
         }
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.22
+            context.duration = 0.2
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().setFrameOrigin(target)
             panel.animator().alphaValue = 1
         }
     }
@@ -58,7 +123,6 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.18
             panel.animator().alphaValue = 0
-            panel.animator().setFrameOrigin(NSPoint(x: panel.frame.minX + 40, y: panel.frame.minY))
         } completionHandler: {
             MainActor.assumeIsolated { panel.orderOut(nil) }
         }
@@ -72,23 +136,27 @@ final class HintOverlay: NSObject, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         // Like Spotlight, a quick question goes away on click elsewhere; meeting hints stay.
-        if !meeting.isRunning, !model.isReplying { hide() }
+        if !meeting.isRunning, !model.isReplying, !model.voice.isListening { hide() }
     }
 
     private func hotKeyPressed() {
         if meeting.isRunning {
             meeting.askNow()
             show()
+        } else if model.voice.isListening {
+            // A second press ends the spoken command right away.
+            Task { await model.toggleDictation() }
         } else if isVisible {
             hide()
         } else {
             show()
+            if model.preferences.dictatesOnShortcut { Task { await model.toggleDictation() } }
         }
     }
 
     private func makePanel() -> SidePanel {
         let panel = SidePanel(
-            contentRect: NSRect(origin: .zero, size: Self.size),
+            contentRect: NSRect(origin: .zero, size: NSSize(width: Self.cardWidth + Self.margin + Self.edgeInset, height: 200)),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -105,7 +173,10 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         // Keep hints out of screen sharing and recordings.
         panel.sharingType = .none
         panel.delegate = self
-        panel.contentView = NSHostingView(rootView: SidePanelView(model: model, meeting: meeting, overlay: self))
+        let hosting = NSHostingView(rootView: SidePanelView(model: model, meeting: meeting, voice: model.voice, overlay: self))
+        // The overlay sizes the window from the card's height; the hosting view must not resize it too.
+        hosting.sizingOptions = []
+        panel.contentView = hosting
         return panel
     }
 }
@@ -118,14 +189,15 @@ final class SidePanel: NSPanel {
 private struct SidePanelView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var meeting: MeetingModel
+    @ObservedObject var voice: VoiceInput
     let overlay: HintOverlay
     @State private var question = ""
     @FocusState private var isInputFocused: Bool
 
-    private var isActive: Bool { meeting.isHinting || model.isReplying }
+    private var isActive: Bool { meeting.isHinting || model.isReplying || voice.isListening }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             header
             if meeting.isRunning {
                 meetingContent
@@ -133,28 +205,39 @@ private struct SidePanelView: View {
                 askContent
             }
         }
-        .padding(20)
-        .frame(width: HintOverlay.size.width - 24, alignment: .topLeading)
+        .padding(16)
+        .frame(width: HintOverlay.cardWidth, alignment: .topLeading)
         .background(SiriBackground(isActive: isActive))
-        .padding(12)
-        .frame(width: HintOverlay.size.width, height: HintOverlay.size.height, alignment: .topTrailing)
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { overlay.fit(cardHeight: $0) }
+        .padding(.top, HintOverlay.edgeInset)
+        .padding(.trailing, HintOverlay.edgeInset)
+        .padding(.leading, HintOverlay.margin)
+        .padding(.bottom, HintOverlay.margin)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         .onExitCommand { overlay.hide() }
         .onAppear { isInputFocused = true }
     }
 
     private var header: some View {
         HStack(spacing: 10) {
-            SiriOrb(isActive: isActive)
-                .frame(width: 26, height: 26)
-            Group {
-                if meeting.isRunning {
-                    Text("Listening to the meeting")
-                } else {
-                    Text(verbatim: "Siri+")
+            // The orb, the title and the empty space between them move the panel.
+            HStack(spacing: 10) {
+                SiriOrb(isActive: isActive)
+                    .frame(width: 22, height: 22)
+                Group {
+                    if meeting.isRunning {
+                        Text("Listening to the meeting")
+                    } else {
+                        Text(verbatim: "Siri+")
+                    }
                 }
+                .font(.system(.headline, design: .rounded))
+                Spacer(minLength: 0)
             }
-            .font(.system(.headline, design: .rounded))
-            Spacer()
+            .contentShape(Rectangle())
+            .gesture(WindowDragGesture())
+            .onTapGesture(count: 2) { overlay.resetPosition() }
+            .help("Drag to move. Double-click to put it back in the corner.")
             GlassEffectContainer(spacing: 6) {
                 HStack(spacing: 6) {
                     Button { overlay.openApp() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
@@ -198,12 +281,43 @@ private struct SidePanelView: View {
 
     @ViewBuilder
     private var askContent: some View {
-        TextField("Ask anything…", text: $question, axis: .vertical)
-            .textFieldStyle(.plain)
-            .font(.system(size: 17, weight: .medium, design: .rounded))
-            .lineLimit(1...4)
-            .focused($isInputFocused)
-            .onSubmit(submit)
+        HStack(alignment: .top, spacing: 8) {
+            if voice.isListening {
+                // Recognized words appear as they are spoken; the part still changing is dimmed.
+                Group {
+                    if voice.dictation.isEmpty {
+                        Text("Listening…").foregroundStyle(.secondary)
+                    } else {
+                        Text(liveDictation)
+                    }
+                }
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+            } else {
+                TextField("Ask anything…", text: $question, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .lineLimit(1...4)
+                    .focused($isInputFocused)
+                    .onSubmit(submit)
+                    .padding(.vertical, 4)
+            }
+            Button {
+                Task { await model.toggleDictation() }
+            } label: {
+                Image(systemName: voice.isListening ? "waveform" : "mic.fill")
+                    .symbolEffect(.variableColor.iterative, isActive: voice.isListening)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
+            .tint(voice.isListening ? .red : nil)
+            .help(voice.isListening ? String(localized: "Stop and send") : String(localized: "Dictate (⌃⌥Space)"))
+        }
+        if let error = voice.errorMessage {
+            answerText(error, isFailure: true)
+        }
 
         if model.isReplying || model.messages.last?.role == .assistant {
             if let asked = model.messages.last(where: { $0.role == .user }) {
@@ -226,7 +340,7 @@ private struct SidePanelView: View {
     private func answerText(_ text: String, isFailure: Bool) -> some View {
         ScrollView {
             Text(text)
-                .font(.system(size: 17, weight: .regular, design: .rounded))
+                .font(.system(size: 15, weight: .regular, design: .rounded))
                 .foregroundStyle(isFailure ? Color.orange : Color.primary)
                 .lineSpacing(3)
                 .textSelection(.enabled)
@@ -234,6 +348,13 @@ private struct SidePanelView: View {
         }
         .frame(maxHeight: 360)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var liveDictation: AttributedString {
+        var volatile = AttributedString(voice.dictation.volatile)
+        volatile.foregroundColor = .secondary
+        let separator = voice.dictation.final.isEmpty || voice.dictation.volatile.isEmpty ? "" : " "
+        return AttributedString(voice.dictation.final + separator) + volatile
     }
 
     private func submit() {
@@ -246,21 +367,21 @@ private struct SidePanelView: View {
 /// Liquid Glass card with Siri's animated rainbow edge while a reply is being written.
 private struct SiriBackground: View {
     let isActive: Bool
-    private let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+    private let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
 
     var body: some View {
         TimelineView(.animation(paused: !isActive)) { context in
             let angle = Angle.degrees(context.date.timeIntervalSinceReferenceDate * 90)
             let gradient = AngularGradient(colors: SiriColors.all, center: .center, angle: angle)
             ZStack {
-                Color.clear.glassEffect(.regular, in: shape)
+                // Clear glass keeps what is behind the panel visible, like Siri's own answers.
+                Color.clear.glassEffect(.clear, in: shape)
                 shape.strokeBorder(gradient, lineWidth: isActive ? 3 : 1.2)
                     .blur(radius: isActive ? 6 : 0)
                     .opacity(isActive ? 0.9 : 0.5)
                 shape.strokeBorder(gradient, lineWidth: isActive ? 1.5 : 0.8)
             }
         }
-        .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
         .animation(.easeInOut(duration: 0.3), value: isActive)
     }
 }

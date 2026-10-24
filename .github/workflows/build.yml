@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  test:
     # Speech's DictationTranscriber and the macOS 26 deployment target need Xcode 26 or newer.
     runs-on: macos-26
     timeout-minutes: 30
@@ -27,30 +27,50 @@ jobs:
         run: swift test
 
       - name: Build the app
-        run: |
-          xcodebuild \
-            -project SiriPlus.xcodeproj \
-            -scheme SiriPlus \
-            -configuration Release \
-            -derivedDataPath build \
-            CODE_SIGN_IDENTITY=- \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM= \
-            build
+        run: SIGN_IDENTITY=- bash scripts/build.sh
 
-      - name: Package
-        run: |
-          ditto -c -k --keepParent build/Build/Products/Release/SiriPlus.app SiriPlus.zip
-          shasum -a 256 SiriPlus.zip
+  release:
+    # Pushing a tag such as v0.2.0 publishes an Apple silicon disk image as a GitHub release;
+    # the app's updater finds it there.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SiriPlus
-          path: SiriPlus.zip
+      - name: Select the newest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
 
-      # Pushing a tag such as v0.3.0 publishes the zip as a GitHub release.
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Build the disk image
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: bash scripts/release.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" SiriPlus.zip --generate-notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cat > notes.md <<EOF
+          ## Install / Установка
+
+          Download **SiriPlus-$version-arm64.dmg** (Apple silicon, macOS 26+).
+
+          Siri+ is not signed with an Apple Developer ID, so macOS blocks the downloaded app. After copying it to Applications, run:
+          У Siri+ нет подписи Apple Developer ID, поэтому macOS блокирует скачанное приложение. После копирования в «Программы» выполните:
+
+          \`\`\`sh
+          xattr -dr com.apple.quarantine /Applications/SiriPlus.app
+          \`\`\`
+
+          Or right-click **Install Siri+.command** in the disk image → Open. / Или в образе: правый щелчок по **Install Siri+.command** → Открыть.
+
+          Installed versions update themselves: menu bar → Check for Updates… / Установленная версия обновляется сама: строка меню → Проверить обновления…
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/SiriPlus-$version-arm64.dmg" \
+            "dist/SiriPlus-$version-arm64.dmg.sha256" \
+            --title "Siri+ $version" \
+            --notes-file notes.md \
+            --generate-notes

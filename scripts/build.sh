@@ -8,15 +8,24 @@ cd "$project_dir"
 # an ad-hoc signature changes with every build. SIGN_IDENTITY overrides the choice; without a certificate, sign ad-hoc.
 identity="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development: [^"]*\)".*/\1/p' | head -1)}"
 identity="${identity:--}"
-printf 'Подпись: %s\n' "$identity"
 
-xcodebuild \
-    -project SiriPlus.xcodeproj \
-    -scheme SiriPlus \
-    -configuration Debug \
-    -derivedDataPath build \
-    CODE_SIGN_IDENTITY="$identity" \
-    CODE_SIGN_STYLE=Manual \
-    DEVELOPMENT_TEAM= \
-    build
+build() {
+    printf 'Подпись: %s\n' "$1"
+    xcodebuild \
+        -project SiriPlus.xcodeproj \
+        -scheme SiriPlus \
+        -configuration Debug \
+        -derivedDataPath build \
+        CODE_SIGN_IDENTITY="$1" \
+        CODE_SIGN_STYLE=Manual \
+        DEVELOPMENT_TEAM= \
+        build
+}
+
+# codesign cannot reach the certificate's key from a locked keychain or a non-interactive shell
+# (errSecInternalComponent); a locally signed build still runs.
+if ! build "$identity" && [ "$identity" != "-" ]; then
+    printf '\nПодпись сертификатом не удалась, собираю с локальной подписью.\n'
+    build -
+fi
 printf '\nПриложение: %s/build/Build/Products/Debug/SiriPlus.app\n' "$project_dir"

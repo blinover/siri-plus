@@ -26,12 +26,6 @@
         "ru": {
           "variations": {
             "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld день"
-                }
-              },
               "few": {
                 "stringUnit": {
                   "state": "translated",
@@ -42,6 +36,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld дней"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld день"
                 }
               },
               "other": {
@@ -55,22 +55,22 @@
         }
       }
     },
+    "A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Созвон замечается, когда Zoom, Teams, Телемост, Telegram или другое приложение для звонков 10 секунд использует микрофон; в браузере начните созвон сами."
+          }
+        }
+      }
+    },
     "API key": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Ключ API"
-          }
-        }
-      }
-    },
-    "About": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "О приложении"
           }
         }
       }
@@ -95,6 +95,16 @@
         }
       }
     },
+    "Agenda, project facts, numbers, things not to forget. They make hints more accurate.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повестка, факты о проекте, цифры, о чём не забыть. С ними подсказки точнее."
+          }
+        }
+      }
+    },
     "Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.": {
       "localizations": {
         "ru": {
@@ -111,6 +121,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Весь звук системы"
+          }
+        }
+      }
+    },
+    "Allow": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешить"
           }
         }
       }
@@ -245,16 +265,6 @@
         }
       }
     },
-    "Capturing…": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Снимаю…"
-          }
-        }
-      }
-    },
     "ChatGPT account": {
       "localizations": {
         "ru": {
@@ -305,12 +315,42 @@
         }
       }
     },
-    "Check Again": {
+    "Check Now": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Проверить снова"
+            "value": "Проверить сейчас"
+          }
+        }
+      }
+    },
+    "Check failed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверка не удалась"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить обновления…"
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверять обновления автоматически"
           }
         }
       }
@@ -565,12 +605,32 @@
         }
       }
     },
+    "Dictate (⌃⌥Space)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Надиктовать (⌃⌥Пробел)"
+          }
+        }
+      }
+    },
     "Dismiss the error": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Закрыть сообщение об ошибке"
+          }
+        }
+      }
+    },
+    "Drag to move. Double-click to put it back in the corner.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перетащите, чтобы переместить. Двойной щелчок вернёт панель в угол."
           }
         }
       }
@@ -645,6 +705,16 @@
         }
       }
     },
+    "GitHub returned error %lld while checking for updates.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub вернул ошибку %lld при проверке обновлений."
+          }
+        }
+      }
+    },
     "Help me with a question": {
       "localizations": {
         "ru": {
@@ -705,12 +775,42 @@
         }
       }
     },
+    "Install": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установить"
+          }
+        }
+      }
+    },
+    "Install %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установить %@"
+          }
+        }
+      }
+    },
     "Install Claude Code": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Установить Claude Code"
+          }
+        }
+      }
+    },
+    "Installing Siri+ %@…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устанавливаю Siri+ %@…"
           }
         }
       }
@@ -755,6 +855,16 @@
         }
       }
     },
+    "Later": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Позже"
+          }
+        }
+      }
+    },
     "Let the participants know you use an assistant.": {
       "localizations": {
         "ru": {
@@ -781,6 +891,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Слушаю созвон"
+          }
+        }
+      }
+    },
+    "Listening…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю…"
           }
         }
       }
@@ -855,16 +975,6 @@
         }
       }
     },
-    "Meetings are stored on this Mac. Only the transcript goes to the model, to write the summary.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Созвоны хранятся на этом Mac. Модели уходит только расшифровка — чтобы написать выжимку."
-          }
-        }
-      }
-    },
     "Microphone": {
       "localizations": {
         "ru": {
@@ -905,22 +1015,32 @@
         }
       }
     },
-    "Needed for screenshots and for meeting audio. After granting it you may need to restart the app.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нужна для снимков экрана и звука созвона. После выдачи разрешения может потребоваться перезапуск."
-          }
-        }
-      }
-    },
     "New Conversation": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Новый диалог"
+          }
+        }
+      }
+    },
+    "New Conversation (⌘N)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новый диалог (⌘N)"
+          }
+        }
+      }
+    },
+    "New versions come from GitHub releases. Siri+ lives in the menu bar, not in the Dock.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новые версии берутся из релизов на GitHub. Siri+ живёт в строке меню, а не в Доке."
           }
         }
       }
@@ -1015,6 +1135,16 @@
         }
       }
     },
+    "OK": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ОК"
+          }
+        }
+      }
+    },
     "Offer to start a meeting when a call begins": {
       "localizations": {
         "ru": {
@@ -1061,6 +1191,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "По теме"
+          }
+        }
+      }
+    },
+    "On-device speech recognition": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознавание речи на Mac"
           }
         }
       }
@@ -1125,16 +1265,6 @@
         }
       }
     },
-    "Open System Settings → Privacy & Security → %@.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Откройте Системные настройки → Конфиденциальность и безопасность → %@."
-          }
-        }
-      }
-    },
     "Open the Siri+ window": {
       "localizations": {
         "ru": {
@@ -1175,52 +1305,12 @@
         }
       }
     },
-    "Permission required": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Требуется разрешение"
-          }
-        }
-      }
-    },
-    "Personal assistant": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Личный помощник"
-          }
-        }
-      }
-    },
-    "Platform": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Платформа"
-          }
-        }
-      }
-    },
     "Ports 1455 and 1457 are busy, so the sign-in callback cannot be received. Close the app using them and try again.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Порты 1455 и 1457 заняты, поэтому ответ входа не может быть получен. Закройте приложение, которое их использует, и повторите."
-          }
-        }
-      }
-    },
-    "Preparing an answer…": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Готовлю ответ…"
           }
         }
       }
@@ -1291,6 +1381,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Обновить список запущенных приложений"
+          }
+        }
+      }
+    },
+    "Release Notes": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нового"
           }
         }
       }
@@ -1375,16 +1475,6 @@
         }
       }
     },
-    "Screen & System Audio Recording": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запись экрана и системного звука"
-          }
-        }
-      }
-    },
     "Screen & system audio recording": {
       "localizations": {
         "ru": {
@@ -1435,16 +1525,6 @@
         }
       }
     },
-    "Screenshots are taken only when you click the button": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Снимки делаются только по кнопке"
-          }
-        }
-      }
-    },
     "Search meetings": {
       "localizations": {
         "ru": {
@@ -1461,6 +1541,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Отправить"
+          }
+        }
+      }
+    },
+    "Send (Return)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить (Return)"
           }
         }
       }
@@ -1625,6 +1715,36 @@
         }
       }
     },
+    "Siri+ %@ is available": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Доступна Siri+ %@"
+          }
+        }
+      }
+    },
+    "Siri+ %@ is the latest version.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ %@ — последняя версия."
+          }
+        }
+      }
+    },
+    "Siri+ cannot replace itself at %@. Move Siri+ to the Applications folder, or install the update from the disk image.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ не может обновить себя в %@. Переместите Siri+ в «Программы» или установите обновление из образа диска."
+          }
+        }
+      }
+    },
     "Siri+ is listening to the meeting": {
       "localizations": {
         "ru": {
@@ -1635,32 +1755,52 @@
         }
       }
     },
-    "Siri+ lives in the menu bar and does not appear in the Dock. The “Open Assistant” action is available in Shortcuts and through Siri.": {
+    "Siri+ needs microphone and screen audio access": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Siri+ живёт в строке меню и не показывается в Доке. Действие «Открыть помощника» доступно в «Командах» и через Siri."
+            "value": "Siri+ нужен доступ к микрофону и звуку экрана"
           }
         }
       }
     },
-    "Speech is recognized\non this Mac.": {
+    "Siri+ will restart by itself.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Речь распознаётся\nна этом Mac."
+            "value": "Siri+ перезапустится сама."
           }
         }
       }
     },
-    "Speech is recognized on this Mac. Only the latest part of the transcript goes to the model, when a hint is needed.": {
+    "Skip This Version": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Речь распознаётся на этом Mac. Модели уходит только последний фрагмент расшифровки, когда нужна подсказка."
+            "value": "Пропустить эту версию"
+          }
+        }
+      }
+    },
+    "Software Update": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновление"
+          }
+        }
+      }
+    },
+    "Speech is recognized on this Mac. ⌃⌥Space in any app asks for a hint.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Речь распознаётся на этом Mac. ⌃⌥Пробел в любом приложении — подсказать сейчас."
           }
         }
       }
@@ -1671,16 +1811,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Язык речи"
-          }
-        }
-      }
-    },
-    "Speech recognition runs on this Mac. ⌃⌥Space in any app asks for a hint. The hint panel is hidden from screen sharing. A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself. Meetings older than the chosen period are deleted from this Mac automatically.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Распознавание речи работает на этом Mac. ⌃⌥Пробел в любом приложении — подсказать сейчас. Панель подсказок скрыта от демонстрации экрана. Звонок замечается, когда Zoom, Teams, Телемост, Telegram или другое приложение для созвонов 10 секунд использует микрофон; в браузере начните созвон сами. Созвоны старше выбранного срока автоматически удаляются с этого Mac."
           }
         }
       }
@@ -1715,6 +1845,16 @@
         }
       }
     },
+    "Start dictation with ⌃⌥Space": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Начинать диктовку по ⌃⌥Пробел"
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "ru": {
@@ -1735,6 +1875,16 @@
         }
       }
     },
+    "Stop and send": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановить и отправить"
+          }
+        }
+      }
+    },
     "Stop the meeting and save it to History?": {
       "localizations": {
         "ru": {
@@ -1745,12 +1895,32 @@
         }
       }
     },
+    "Stored on this Mac": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хранится на этом Mac"
+          }
+        }
+      }
+    },
     "Summary": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Краткая выжимка"
+          }
+        }
+      }
+    },
+    "Switch Siri+ on in this list, then come back.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Включите Siri+ в этом списке и вернитесь."
           }
         }
       }
@@ -1821,6 +1991,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Звонок в %@ закончился"
+          }
+        }
+      }
+    },
+    "The downloaded disk image does not contain this version of Siri+.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В скачанном образе нет этой версии Siri+."
+          }
+        }
+      }
+    },
+    "The downloaded update is damaged. Try again later.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачанное обновление повреждено. Попробуйте позже."
           }
         }
       }
@@ -1905,12 +2095,32 @@
         }
       }
     },
+    "The release has no disk image for this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В релизе нет образа для этого Mac."
+          }
+        }
+      }
+    },
     "The service returned error %lld: %@": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Сервис вернул ошибку %lld: %@"
+          }
+        }
+      }
+    },
+    "The shortcut opens the panel already listening; stop talking and the command is sent.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сочетание открывает панель, которая уже слушает; замолчите — и команда отправится."
           }
         }
       }
@@ -1985,12 +2195,42 @@
         }
       }
     },
+    "Turned off": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключено"
+          }
+        }
+      }
+    },
     "Type a request…": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Напиши запрос…"
+          }
+        }
+      }
+    },
+    "Up to date": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Последняя версия"
+          }
+        }
+      }
+    },
+    "Updates": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновления"
           }
         }
       }
@@ -2055,22 +2295,22 @@
         }
       }
     },
-    "Your context. One conversation.": {
+    "You have %@.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Твой контекст. Один диалог."
+            "value": "У вас %@."
           }
         }
       }
     },
-    "⌘↩ send · ⌘N new conversation · history is kept until the app quits": {
+    "“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "⌘↩ отправить · ⌘N новый диалог · история хранится до закрытия приложения"
+            "value": "«Разрешить» показывает запрос macOS и добавляет Siri+ в список в Системных настройках. После включения записи экрана перезапустите Siri+."
           }
         }
       }

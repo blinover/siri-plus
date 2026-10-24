@@ -137,6 +137,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var historyRetentionDays = 0
     /// Offers to start a meeting when a call app starts recording, and to stop it when the call ends.
     var offersMeetingStart = true
+    /// Looks for new versions on GitHub at launch and twice a day.
+    var checksForUpdates = true
+    /// ⌃⌥Space opens the panel already listening, as Siri does.
+    var dictatesOnShortcut = true
 
     init(
         replyStyle: ReplyStyle = .brief,
@@ -150,7 +154,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         transcriptionLocale: String = systemLocale,
         capturesMicrophone: Bool = true,
         historyRetentionDays: Int = 0,
-        offersMeetingStart: Bool = true
+        offersMeetingStart: Bool = true,
+        checksForUpdates: Bool = true,
+        dictatesOnShortcut: Bool = true
     ) {
         self.replyStyle = replyStyle
         self.showTimestamps = showTimestamps
@@ -164,6 +170,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.capturesMicrophone = capturesMicrophone
         self.historyRetentionDays = historyRetentionDays
         self.offersMeetingStart = offersMeetingStart
+        self.checksForUpdates = checksForUpdates
+        self.dictatesOnShortcut = dictatesOnShortcut
     }
 
     // Settings saved by older versions lack the newer keys; keep what is there.
@@ -182,6 +190,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
         historyRetentionDays = try container.decodeIfPresent(Int.self, forKey: .historyRetentionDays) ?? defaults.historyRetentionDays
         offersMeetingStart = try container.decodeIfPresent(Bool.self, forKey: .offersMeetingStart) ?? defaults.offersMeetingStart
+        checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? defaults.checksForUpdates
+        dictatesOnShortcut = try container.decodeIfPresent(Bool.self, forKey: .dictatesOnShortcut) ?? defaults.dictatesOnShortcut
     }
 
     var selection: ModelSelection {

@@ -257,3 +257,20 @@ final class ScriptedHints: HintService, SummaryService, @unchecked Sendable {
         }
     }
 }
+
+@Suite
+struct DictationTextTests {
+    @Test func volatileWordsAreReplacedUntilFinal() {
+        var text = DictationText()
+        text.apply("открой", isFinal: false)
+        text.apply("открой календарь", isFinal: false)
+        #expect(text.text == "открой календарь")
+        text.apply("открой календарь", isFinal: true)
+        text.apply("на завтра", isFinal: false)
+        #expect(text.final == "открой календарь")
+        #expect(text.text == "открой календарь на завтра")
+        text.apply("", isFinal: false)
+        #expect(text.text == "открой календарь")
+        #expect(!text.isEmpty)
+    }
+}

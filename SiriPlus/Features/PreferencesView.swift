@@ -4,7 +4,6 @@ import SwiftUI
 struct PreferencesView: View {
     @ObservedObject var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
-    @State private var screenAccess = CGPreflightScreenCaptureAccess()
     @State private var apiKey = ""
 
     var body: some View {
@@ -18,10 +17,10 @@ struct PreferencesView: View {
         .formStyle(.grouped)
         .navigationTitle("Settings")
         .task { await model.refreshAccounts() }
-        .onAppear { screenAccess = CGPreflightScreenCaptureAccess() }
+        .onAppear { model.permissions.refresh() }
         .onChange(of: scenePhase) {
             if scenePhase == .active {
-                screenAccess = CGPreflightScreenCaptureAccess()
+                model.permissions.refresh()
                 Task { await model.refreshAccounts() }
             }
         }
@@ -63,6 +62,7 @@ struct PreferencesView: View {
             }
             Toggle("Recognize my voice too (microphone)", isOn: $model.preferences.capturesMicrophone)
             Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
+                .help("A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.")
             Picker("Keep meetings in History", selection: $model.preferences.historyRetentionDays) {
                 Text("Forever").tag(0)
                 ForEach([7, 30, 90, 365], id: \.self) { days in
@@ -72,7 +72,7 @@ struct PreferencesView: View {
         } header: {
             Label("Meeting", systemImage: "waveform")
         } footer: {
-            footnote("Speech recognition runs on this Mac. ⌃⌥Space in any app asks for a hint. The hint panel is hidden from screen sharing. A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself. Meetings older than the chosen period are deleted from this Mac automatically.")
+            footnote("Speech is recognized on this Mac. ⌃⌥Space in any app asks for a hint.")
         }
     }
 
@@ -84,6 +84,8 @@ struct PreferencesView: View {
                 }
             }
             Toggle("Show message time", isOn: $model.preferences.showTimestamps)
+            Toggle("Start dictation with ⌃⌥Space", isOn: $model.preferences.dictatesOnShortcut)
+                .help("The shortcut opens the panel already listening; stop talking and the command is sent.")
         } header: {
             Label("Conversation", systemImage: "text.bubble")
         } footer: {
@@ -93,50 +95,79 @@ struct PreferencesView: View {
 
     private var accessSection: some View {
         Section {
-            LabeledContent {
-                HStack(spacing: 10) {
-                    statusBadge(isOK: screenAccess, ok: String(localized: "Allowed"), missing: String(localized: "Permission required"))
-                    Button("Open Settings") {
-                        openPrivacySettings("Privacy_ScreenCapture", fallback: String(localized: "Screen & System Audio Recording"))
-                    }
-                    .buttonStyle(.glass)
-                }
-            } label: {
-                Label("Screen & system audio recording", systemImage: "rectangle.dashed.badge.record")
-            }
-            LabeledContent {
-                Button("Open Settings") {
-                    openPrivacySettings("Privacy_Microphone", fallback: String(localized: "Microphone"))
-                }
-                .buttonStyle(.glass)
-            } label: {
-                Label("Microphone", systemImage: "mic")
-            }
+            permissionRow(.screen, title: String(localized: "Screen & system audio recording"), symbol: "rectangle.dashed.badge.record")
+            permissionRow(.microphone, title: String(localized: "Microphone"), symbol: "mic")
         } header: {
-            HStack {
-                Label("Screen and Audio Access", systemImage: "lock.shield")
-                Spacer()
-                Button("Check Again") { screenAccess = CGPreflightScreenCaptureAccess() }
-                    .buttonStyle(.glass)
-                    .controlSize(.small)
-            }
+            Label("Screen and Audio Access", systemImage: "lock.shield")
         } footer: {
-            footnote("Needed for screenshots and for meeting audio. After granting it you may need to restart the app.")
+            footnote("“Allow” shows the macOS prompt and adds Siri+ to the list in System Settings. After switching screen recording on, restart Siri+.")
+        }
+    }
+
+    private func permissionRow(_ kind: PermissionCenter.Kind, title: String, symbol: String) -> some View {
+        let status = model.permissions.status(of: kind)
+        return LabeledContent {
+            HStack(spacing: 8) {
+                switch status {
+                case .granted:
+                    statusBadge(isOK: true, ok: String(localized: "Allowed"), missing: "")
+                case .notAsked:
+                    Button("Allow") { Task { await model.permissions.request(kind) } }
+                        .buttonStyle(.glassProminent)
+                case .denied:
+                    statusBadge(isOK: false, ok: "", missing: String(localized: "Turned off"))
+                    Button("Open Settings") { model.permissions.openSettings(kind) }
+                        .buttonStyle(.glass)
+                        .help("Switch Siri+ on in this list, then come back.")
+                }
+            }
+        } label: {
+            Label(title, systemImage: symbol)
         }
     }
 
     private var aboutSection: some View {
         Section {
             LabeledContent {
-                Text(verbatim: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
+                HStack(spacing: 8) {
+                    updateStatus
+                    Button("Check Now") { Task { await model.updates.check(userInitiated: true) } }
+                        .buttonStyle(.glass)
+                        .disabled(model.updates.state == .checking)
+                }
             } label: {
-                Text(verbatim: "Siri+")
+                Label {
+                    Text(verbatim: "Siri+ \(model.updates.currentVersionText)")
+                } icon: {
+                    Image(nsImage: NSApplication.shared.applicationIconImage)
+                        .resizable()
+                        .frame(width: 18, height: 18)
+                }
             }
-            LabeledContent("Platform") { Text(verbatim: "macOS 26+") }
+            Toggle("Check for updates automatically", isOn: $model.preferences.checksForUpdates)
         } header: {
-            Label("About", systemImage: "info.circle")
+            Label("Updates", systemImage: "arrow.down.circle")
         } footer: {
-            footnote("Siri+ lives in the menu bar and does not appear in the Dock. The “Open Assistant” action is available in Shortcuts and through Siri.")
+            footnote("New versions come from GitHub releases. Siri+ lives in the menu bar, not in the Dock.")
+        }
+    }
+
+    @ViewBuilder
+    private var updateStatus: some View {
+        switch model.updates.state {
+        case .checking:
+            ProgressView().controlSize(.small)
+        case .upToDate:
+            statusBadge(isOK: true, ok: String(localized: "Up to date"), missing: "")
+        case .available(let release):
+            Button("Install \(release.version)") { Task { await model.updates.install() } }
+                .buttonStyle(.glassProminent)
+        case .installing:
+            ProgressView().controlSize(.small)
+        case .failed:
+            statusBadge(isOK: false, ok: "", missing: String(localized: "Check failed"))
+        case .idle:
+            EmptyView()
         }
     }
 
@@ -295,13 +326,5 @@ struct PreferencesView: View {
     private var systemLanguageName: String {
         let code = Locale(identifier: Locale.preferredLanguages.first ?? "en").language.languageCode?.identifier ?? "en"
         return Locale.current.localizedString(forLanguageCode: code)?.capitalized ?? code
-    }
-
-    private func openPrivacySettings(_ anchor: String, fallback: String) {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)"),
-              NSWorkspace.shared.open(url) else {
-            model.errorMessage = String(localized: "Open System Settings → Privacy & Security → \(fallback).")
-            return
-        }
     }
 }
