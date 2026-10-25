@@ -7,7 +7,7 @@ import SwiftUI
 @MainActor
 final class HintOverlay: NSObject, NSWindowDelegate {
     /// Width of the glass card.
-    static let cardWidth: CGFloat = 360
+    static let cardWidth: CGFloat = 460
     /// Gap between the card and the top and right edges of the screen, as macOS notifications and widgets keep.
     static let edgeInset: CGFloat = 8
     /// Transparent room left of and below the card for its glow; the other sides touch the screen edge.
@@ -134,23 +134,55 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         showMainWindow()
     }
 
-    /// Opens the main window, or brings it forward, and activates the app.
+    /// Opens the main window, or brings it forward over every other app's windows.
     func showMainWindow() {
         NSApplication.shared.activate()
         openMainWindow?()
-        // An already open window may stay behind other apps without this.
-        NSApplication.shared.windows
-            .first { $0.canBecomeMain && !($0 is NSPanel) && $0.isVisible }?
-            .makeKeyAndOrderFront(nil)
+        // A window `openWindow` just created appears on a later run loop turn. macOS 26 may also refuse
+        // to activate the app from a menu, so the window is ordered front regardless of activation.
+        Task { @MainActor in
+            for _ in 0..<10 {
+                if let window = NSApplication.shared.windows.first(where: { $0.canBecomeMain && !($0 is NSPanel) && $0.isVisible }) {
+                    // Briefly lifting the window above normal windows puts it on top of other apps;
+                    // back at the normal level it stays in front.
+                    window.level = .floating
+                    window.orderFrontRegardless()
+                    window.makeKeyAndOrderFront(nil)
+                    NSApplication.shared.activate()
+                    try? await Task.sleep(for: .milliseconds(300))
+                    window.level = .normal
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+        }
     }
 
     /// When the panel last appeared; focus settling right after that is not a click elsewhere.
     private var shownAt = Date.distantPast
 
+    /// True while the file picker is open: the panel loses focus to it but must stay.
+    private var isChoosingFiles = false
+
     func windowDidResignKey(_ notification: Notification) {
-        // Like Spotlight, a quick question goes away on click elsewhere; meeting hints stay.
-        guard Date().timeIntervalSince(shownAt) > 0.6 else { return }
-        if !meeting.isRunning, !model.isReplying, !model.voice.isListening { hide() }
+        // Like Spotlight, a quick question goes away on click elsewhere; meeting hints and a
+        // conversation in progress stay.
+        guard Date().timeIntervalSince(shownAt) > 0.6, !isChoosingFiles else { return }
+        if !meeting.isRunning, !model.isReplying, !model.voice.isListening, model.messages.isEmpty { hide() }
+    }
+
+    /// Lets the user pick files to attach to the next question.
+    func chooseFiles() {
+        let picker = NSOpenPanel()
+        picker.allowsMultipleSelection = true
+        picker.canChooseDirectories = false
+        picker.message = String(localized: "Choose images, PDFs or text files for Siri+ to analyze.")
+        isChoosingFiles = true
+        NSApplication.shared.activate()
+        let response = picker.runModal()
+        isChoosingFiles = false
+        if response == .OK { model.attach(picker.urls) }
+        show()
     }
 
     private func hotKeyPressed() {
@@ -206,22 +238,36 @@ private struct SidePanelView: View {
     @ObservedObject var voice: VoiceInput
     let overlay: HintOverlay
     @State private var question = ""
+    @State private var isDropTargeted = false
     @FocusState private var isInputFocused: Bool
 
     private var isActive: Bool { meeting.isHinting || model.isReplying || voice.isListening }
 
+    /// The conversation grows with the chat up to most of the screen, then scrolls.
+    private var maxConversationHeight: CGFloat {
+        max(220, (NSScreen.main?.visibleFrame.height ?? 900) * 0.6)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            header
+        VStack(alignment: .leading, spacing: 0) {
             if meeting.isRunning {
+                meetingHeader
                 meetingContent
             } else {
-                askContent
+                inputRow
+                attachmentsRow
+                conversation
             }
         }
-        .padding(16)
         .frame(width: HintOverlay.cardWidth, alignment: .topLeading)
-        .background(SiriBackground(isActive: isActive))
+        .background(PanelBackground(isActive: isActive, isDropTargeted: isDropTargeted))
+        // Any empty part of the card moves the panel; controls and text keep their own clicks and drags.
+        .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .gesture(WindowDragGesture())
+        .dropDestination(for: URL.self) { urls, _ in
+            model.attach(urls)
+            return !urls.isEmpty
+        } isTargeted: { isDropTargeted = $0 }
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { overlay.fit(cardHeight: $0) }
         .padding(.top, HintOverlay.edgeInset)
         .padding(.trailing, HintOverlay.edgeInset)
@@ -232,136 +278,122 @@ private struct SidePanelView: View {
         .onAppear { isInputFocused = true }
     }
 
-    private var header: some View {
+    // MARK: Ask
+
+    /// One line like Spotlight's: the orb moves the panel, then the question and its tools.
+    private var inputRow: some View {
         HStack(spacing: 10) {
-            // The orb, the title and the empty space between them move the panel.
-            HStack(spacing: 10) {
-                SiriOrb(isActive: isActive)
-                    .frame(width: 22, height: 22)
-                Group {
-                    if meeting.isRunning {
-                        Text("Listening to the meeting")
-                    } else {
-                        Text(verbatim: "Siri+")
+            dragHandle
+            Group {
+                if voice.isListening {
+                    // Recognized words appear as they are spoken; the part still changing is dimmed.
+                    Group {
+                        if voice.dictation.isEmpty {
+                            Text("Listening…").foregroundStyle(.secondary)
+                        } else {
+                            Text(liveDictation)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    TextField("Ask anything…", text: $question, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...6)
+                        .focused($isInputFocused)
+                        .onSubmit(submit)
                 }
-                .font(.system(.headline, design: .rounded))
-                Spacer(minLength: 0)
             }
-            .contentShape(Rectangle())
-            .gesture(WindowDragGesture())
+            .font(.system(size: 17, weight: .regular))
+
+            GlassEffectContainer(spacing: 4) {
+                HStack(spacing: 4) {
+                    toolButton(String(localized: "Attach Files"), symbol: "paperclip") { overlay.chooseFiles() }
+                        .disabled(voice.isListening)
+                    Button {
+                        Task { await model.toggleDictation() }
+                    } label: {
+                        Image(systemName: voice.isListening ? "waveform" : "mic.fill")
+                            .symbolEffect(.variableColor.iterative, isActive: voice.isListening)
+                    }
+                    .tint(voice.isListening ? .red : nil)
+                    .help(voice.isListening ? String(localized: "Stop and send") : String(localized: "Dictate (⌃⌥Space)"))
+                    if !model.messages.isEmpty {
+                        toolButton(String(localized: "New Conversation"), symbol: "square.and.pencil") { model.newConversation() }
+                    }
+                    toolButton(String(localized: "Open the Siri+ window"), symbol: "arrow.up.left.and.arrow.down.right") { overlay.openApp() }
+                    toolButton(String(localized: "Hide (Esc)"), symbol: "xmark") { overlay.hide() }
+                }
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    private func toolButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol) }
+            .help(title)
+            .accessibilityLabel(title)
+    }
+
+    private var dragHandle: some View {
+        SiriOrb(isActive: isActive)
+            .frame(width: 22, height: 22)
+            .contentShape(Circle())
             .onTapGesture(count: 2) { overlay.resetPosition() }
             .help("Drag to move. Double-click to put it back in the corner.")
-            GlassEffectContainer(spacing: 6) {
+    }
+
+    @ViewBuilder
+    private var attachmentsRow: some View {
+        if !model.pendingAttachments.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    Button { overlay.openApp() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right") }
-                        .help("Open the Siri+ window")
-                    Button { overlay.hide() } label: { Image(systemName: "xmark") }
-                        .help("Hide (Esc)")
-                }
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .controlSize(.small)
-        }
-    }
-
-    @ViewBuilder
-    private var meetingContent: some View {
-        if let hint = meeting.latestHint {
-            VStack(alignment: .leading, spacing: 8) {
-                if let question = hint.question {
-                    Text(verbatim: "“\(question)”")
-                        .font(.system(.callout, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-                answerText(hint.failure ?? hint.text, isFailure: hint.failure != nil)
-            }
-        } else {
-            Text("I’ll suggest an answer when the other side asks a question.\n⌃⌥Space — hint now.")
-                .font(.system(.callout, design: .rounded))
-                .foregroundStyle(.secondary)
-        }
-        HStack {
-            Button("Hint Now", systemImage: "sparkles") { meeting.askNow() }
-                .disabled(meeting.transcript.isEmpty)
-            Spacer()
-            Button("Stop", systemImage: "stop.fill") { Task { await meeting.stop() } }
-        }
-        .buttonStyle(.glass)
-        .controlSize(.small)
-    }
-
-    @ViewBuilder
-    private var askContent: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if voice.isListening {
-                // Recognized words appear as they are spoken; the part still changing is dimmed.
-                Group {
-                    if voice.dictation.isEmpty {
-                        Text("Listening…").foregroundStyle(.secondary)
-                    } else {
-                        Text(liveDictation)
+                    ForEach(model.pendingAttachments) { attachment in
+                        AttachmentChip(attachment: attachment) { model.removeAttachment(attachment.id) }
                     }
                 }
-                .font(.system(size: 15, weight: .medium, design: .rounded))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 4)
-            } else {
-                TextField("Ask anything…", text: $question, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .lineLimit(1...4)
-                    .focused($isInputFocused)
-                    .onSubmit(submit)
-                    .padding(.vertical, 4)
+                .padding(.horizontal, 14)
             }
-            Button {
-                Task { await model.toggleDictation() }
-            } label: {
-                Image(systemName: voice.isListening ? "waveform" : "mic.fill")
-                    .symbolEffect(.variableColor.iterative, isActive: voice.isListening)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .controlSize(.small)
-            .tint(voice.isListening ? .red : nil)
-            .help(voice.isListening ? String(localized: "Stop and send") : String(localized: "Dictate (⌃⌥Space)"))
-        }
-        if let error = voice.errorMessage {
-            answerText(error, isFailure: true)
-        }
-
-        if model.isReplying || model.messages.last?.role == .assistant {
-            if let asked = model.messages.last(where: { $0.role == .user }) {
-                Text(asked.text)
-                    .font(.system(.callout, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            if model.isReplying, model.partialReply.isEmpty {
-                ProgressView().controlSize(.small)
-            } else {
-                answerText(model.isReplying ? model.partialReply : model.messages.last?.text ?? "", isFailure: false)
-            }
-        }
-        if let error = model.errorMessage {
-            answerText(error, isFailure: true)
+            .padding(.bottom, 10)
         }
     }
 
-    private func answerText(_ text: String, isFailure: Bool) -> some View {
-        ScrollView {
-            Text(text)
-                .font(.system(size: 15, weight: .regular, design: .rounded))
-                .foregroundStyle(isFailure ? Color.orange : Color.primary)
-                .lineSpacing(3)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    @ViewBuilder
+    private var conversation: some View {
+        if !model.messages.isEmpty || model.isReplying || voice.errorMessage != nil {
+            Divider().padding(.horizontal, 14)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 12) {
+                        ForEach(model.messages) { message in
+                            PanelMessage(message: message)
+                        }
+                        if model.isReplying {
+                            if model.partialReply.isEmpty {
+                                ProgressView().controlSize(.small).padding(.leading, 24)
+                            } else {
+                                PanelMessage(message: ChatMessage(role: .assistant, text: model.partialReply))
+                            }
+                        }
+                        if let error = voice.errorMessage ?? model.errorMessage {
+                            Label(error, systemImage: "exclamationmark.triangle")
+                                .font(.callout)
+                                .foregroundStyle(.orange)
+                        }
+                        Color.clear.frame(height: 1).id("end")
+                    }
+                    .padding(14)
+                }
+                .frame(maxHeight: maxConversationHeight)
+                .fixedSize(horizontal: false, vertical: true)
+                .onChange(of: model.messages.count) { withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
+                .onChange(of: model.partialReply) { proxy.scrollTo("end", anchor: .bottom) }
+                .onAppear { proxy.scrollTo("end", anchor: .bottom) }
+            }
         }
-        .frame(maxHeight: 360)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var liveDictation: AttributedString {
@@ -372,28 +404,128 @@ private struct SidePanelView: View {
     }
 
     private func submit() {
-        let text = question
+        let typed = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Attached files alone are a request too.
+        let text = typed.isEmpty && !model.pendingAttachments.isEmpty ? String(localized: "Analyze the attached files.") : typed
         guard model.send(text) != nil else { return }
         question = ""
     }
+
+    // MARK: Meeting
+
+    private var meetingHeader: some View {
+        HStack(spacing: 10) {
+            dragHandle
+            Text("Listening to the meeting")
+                .font(.headline)
+            Spacer(minLength: 0)
+            Button { overlay.hide() } label: { Image(systemName: "xmark") }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .help("Hide (Esc)")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    @ViewBuilder
+    private var meetingContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let hint = meeting.latestHint {
+                if let question = hint.question {
+                    Text(verbatim: "“\(question)”")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                ScrollView {
+                    Text(hint.failure ?? hint.text)
+                        .font(.system(size: 15))
+                        .foregroundStyle(hint.failure == nil ? Color.primary : Color.orange)
+                        .lineSpacing(3)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: maxConversationHeight)
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("I’ll suggest an answer when the other side asks a question.\n⌃⌥Space — hint now.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            HStack {
+                Button("Hint Now", systemImage: "sparkles") { meeting.askNow() }
+                    .disabled(meeting.transcript.isEmpty)
+                Spacer()
+                Button("Stop", systemImage: "stop.fill") { Task { await meeting.stop() } }
+            }
+            .buttonStyle(.glass)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+    }
 }
 
-/// Liquid Glass card with Siri's animated rainbow edge while a reply is being written.
-private struct SiriBackground: View {
+/// One message in the panel: the user's on the right in a tinted bubble, Siri+'s on the left.
+private struct PanelMessage: View {
+    let message: ChatMessage
+
+    var body: some View {
+        if message.role == .user {
+            HStack {
+                Spacer(minLength: 48)
+                VStack(alignment: .trailing, spacing: 4) {
+                    ForEach(message.attachments) { attachment in
+                        Label(attachment.name, systemImage: attachment.symbol)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    if message.imageJPEG != nil {
+                        Label("Screenshot", systemImage: "photo").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Text(message.text)
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.22), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+            }
+        } else {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(.linearGradient(colors: [.blue, .purple, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .padding(.top, 2)
+                Text(message.text)
+                    .textSelection(.enabled)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+/// Frosted Liquid Glass like Spotlight's; Siri's colors run along the edge only while it listens or answers.
+private struct PanelBackground: View {
     let isActive: Bool
-    private let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+    let isDropTargeted: Bool
+    private let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
 
     var body: some View {
         TimelineView(.animation(paused: !isActive)) { context in
             let angle = Angle.degrees(context.date.timeIntervalSinceReferenceDate * 90)
             let gradient = AngularGradient(colors: SiriColors.all, center: .center, angle: angle)
             ZStack {
-                // Clear glass keeps what is behind the panel visible, like Siri's own answers.
-                Color.clear.glassEffect(.clear, in: shape)
-                shape.strokeBorder(gradient, lineWidth: isActive ? 3 : 1.2)
-                    .blur(radius: isActive ? 6 : 0)
-                    .opacity(isActive ? 0.9 : 0.5)
-                shape.strokeBorder(gradient, lineWidth: isActive ? 1.5 : 0.8)
+                Color.clear.glassEffect(.regular, in: shape)
+                if isActive {
+                    shape.strokeBorder(gradient, lineWidth: 3).blur(radius: 5).opacity(0.8)
+                    shape.strokeBorder(gradient, lineWidth: 1.2)
+                }
+                if isDropTargeted {
+                    shape.strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isActive)

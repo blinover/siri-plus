@@ -61,6 +61,12 @@ struct UpdateTests {
         #expect(updates.offer?.version == "0.3.0")
     }
 
+    @Test func progressFractionNeedsAKnownSize() {
+        #expect(UpdateProgress.downloading(received: 50, total: 200).fraction == 0.25)
+        #expect(UpdateProgress.downloading(received: 50, total: nil).fraction == nil)
+        #expect(UpdateProgress.verifying.fraction == nil)
+    }
+
     @Test @MainActor func failedInstallKeepsTheAppRunning() async {
         let installer = RecordingInstaller()
         installer.error = UpdateError.checksumMismatch
@@ -101,8 +107,9 @@ private final class RecordingInstaller: UpdateInstalling, @unchecked Sendable {
 
     var prepared: [String] { lock.withLock { versions } }
 
-    func prepare(_ release: AppRelease) async throws {
+    func prepare(_ release: AppRelease, progress: @escaping @Sendable (UpdateProgress) -> Void) async throws {
         lock.withLock { versions.append(release.version) }
+        progress(.downloading(received: 50, total: 100))
         if let error { throw error }
     }
 }

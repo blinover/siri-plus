@@ -1,12 +1,42 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ cannot be attached: only images, PDFs and text files are supported.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ нельзя приложить: поддерживаются только изображения, PDF и текстовые файлы."
+          }
+        }
+      }
+    },
     "%@ connected": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ подключён"
+          }
+        }
+      }
+    },
+    "%@ could not be read.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать %@."
+          }
+        }
+      }
+    },
+    "%@ has no text to analyze.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В %@ нет текста для анализа."
           }
         }
       }
@@ -145,6 +175,16 @@
         }
       }
     },
+    "Analyze the attached files.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проанализируй приложенные файлы."
+          }
+        }
+      }
+    },
     "Answer style": {
       "localizations": {
         "ru": {
@@ -221,6 +261,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Помощник"
+          }
+        }
+      }
+    },
+    "Attach Files": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приложить файлы"
           }
         }
       }
@@ -355,6 +405,26 @@
         }
       }
     },
+    "Checking for updates…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ищу обновления…"
+          }
+        }
+      }
+    },
+    "Checking the download…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверяю загрузку…"
+          }
+        }
+      }
+    },
     "Choose a ChatGPT model in Settings.": {
       "localizations": {
         "ru": {
@@ -371,6 +441,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выберите созвон"
+          }
+        }
+      }
+    },
+    "Choose images, PDFs or text files for Siri+ to analyze.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите изображения, PDF или текстовые файлы, которые Siri+ проанализирует."
           }
         }
       }
@@ -625,6 +705,26 @@
         }
       }
     },
+    "Downloading %@ of %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачано %@ из %@"
+          }
+        }
+      }
+    },
+    "Downloading…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачиваю…"
+          }
+        }
+      }
+    },
     "Drag to move. Double-click to put it back in the corner.": {
       "localizations": {
         "ru": {
@@ -821,6 +921,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Устанавливаю Siri+ %@…"
+          }
+        }
+      }
+    },
+    "Installing. Siri+ will restart by itself.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Устанавливаю. Siri+ перезапустится сама."
           }
         }
       }
@@ -1261,16 +1371,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Открыть настройки"
-          }
-        }
-      }
-    },
-    "Open Siri+": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Открыть Siri+"
           }
         }
       }
@@ -1795,16 +1895,6 @@
         }
       }
     },
-    "Siri+ will restart by itself.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri+ перезапустится сама."
-          }
-        }
-      }
-    },
     "Skip This Version": {
       "localizations": {
         "ru": {
@@ -2171,6 +2261,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расшифровка и выжимка будут удалены с этого Mac."
+          }
+        }
+      }
+    },
+    "The update could not be downloaded (%lld).": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось скачать обновление (%lld)."
           }
         }
       }

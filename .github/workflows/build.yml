@@ -84,6 +84,8 @@ jobs:
           Or right-click **Install Siri+.command** in the disk image → Open. / Или в образе: правый щелчок по **Install Siri+.command** → Открыть.
 
           Installed versions update themselves: menu bar → Check for Updates… / Установленная версия обновляется сама: строка меню → Проверить обновления…
+
+          Siri+ is free and open source. Support its development on [Boosty](https://boosty.to/rtm00). / Поддержать разработку: [Boosty](https://boosty.to/rtm00).
           EOF
           gh release create "$GITHUB_REF_NAME" \
             "dist/SiriPlus-$version-arm64.dmg" \

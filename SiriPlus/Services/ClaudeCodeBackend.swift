@@ -111,7 +111,7 @@ struct ClaudeCodeBackend: ModelBackend {
         var content: [[String: Any]] = []
         let single = prompt.turns.count == 1
         for turn in prompt.turns {
-            if let image = turn.imageJPEG {
+            for image in turn.images {
                 content.append(["type": "image", "source": ["type": "base64", "media_type": "image/jpeg", "data": image.base64EncodedString()]])
             }
             // History is tagged by role so the model can tell its earlier replies from the user's.

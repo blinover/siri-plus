@@ -5,7 +5,7 @@ import SwiftUI
 /// A glass panel under the menu bar offering a new version; it stays while the update installs.
 @MainActor
 final class UpdatePrompt {
-    private static let size = NSSize(width: 440, height: 76)
+    private static let size = NSSize(width: 440, height: 84)
 
     private let updates: UpdateModel
     private var panel: NSPanel?
@@ -13,10 +13,10 @@ final class UpdatePrompt {
 
     init(updates: UpdateModel) {
         self.updates = updates
-        changes = updates.$offer.combineLatest(updates.$state, updates.$notice)
-            .map { offer, state, notice -> Bool in
+        changes = updates.$offer.combineLatest(updates.$state, updates.$notice, updates.$isCheckingVisibly)
+            .map { offer, state, notice, checking -> Bool in
                 if case .installing = state { return true }
-                return offer != nil || notice != nil
+                return offer != nil || notice != nil || checking
             }
             .removeDuplicates()
             .sink { [weak self] visible in visible ? self?.show() : self?.hide() }
@@ -78,25 +78,28 @@ private struct UpdatePromptView: View {
                 .resizable()
                 .frame(width: 36, height: 36)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                switch updates.state {
-                case .installing(let release):
+            VStack(alignment: .leading, spacing: 3) {
+                if case .installing(let release) = updates.state {
                     Text("Installing Siri+ \(release.version)…").font(.headline)
-                    Text("Siri+ will restart by itself.").font(.callout).foregroundStyle(.secondary)
-                default:
-                    if let offer = updates.offer {
-                        Text("Siri+ \(offer.version) is available").font(.headline)
-                        Text("You have \(updates.currentVersionText).").font(.callout).foregroundStyle(.secondary)
-                    } else if let notice = updates.notice {
-                        Text("Software Update").font(.headline)
-                        Text(notice).font(.callout).foregroundStyle(.secondary)
-                    }
+                    progressBar(updates.progress?.fraction)
+                    Text(stepText).font(.caption).foregroundStyle(.secondary)
+                } else if updates.isCheckingVisibly {
+                    Text("Checking for updates…").font(.headline)
+                    progressBar(nil)
+                } else if let offer = updates.offer {
+                    Text("Siri+ \(offer.version) is available").font(.headline)
+                    Text("You have \(updates.currentVersionText).").font(.callout).foregroundStyle(.secondary)
+                } else if let notice = updates.notice {
+                    Text("Software Update").font(.headline)
+                    Text(notice).font(.callout).foregroundStyle(.secondary)
                 }
             }
             .lineLimit(1)
             Spacer(minLength: 8)
             if case .installing = updates.state {
-                ProgressView().controlSize(.small)
+                EmptyView()
+            } else if updates.isCheckingVisibly {
+                EmptyView()
             } else if updates.offer == nil {
                 Button("OK") { updates.dismissNotice() }
                     .buttonStyle(.glass)
@@ -120,5 +123,29 @@ private struct UpdatePromptView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .padding(4)
+    }
+
+    /// A determinate bar while the size is known, otherwise a moving one.
+    @ViewBuilder
+    private func progressBar(_ fraction: Double?) -> some View {
+        if let fraction {
+            ProgressView(value: fraction).progressViewStyle(.linear)
+        } else {
+            ProgressView().progressViewStyle(.linear)
+        }
+    }
+
+    private var stepText: String {
+        switch updates.progress {
+        case .downloading(let received, let total?):
+            let format = ByteCountFormatStyle(style: .file)
+            return String(localized: "Downloading \(received.formatted(format)) of \(total.formatted(format))")
+        case .downloading:
+            return String(localized: "Downloading…")
+        case .verifying:
+            return String(localized: "Checking the download…")
+        case .installing, nil:
+            return String(localized: "Installing. Siri+ will restart by itself.")
+        }
     }
 }

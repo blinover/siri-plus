@@ -64,6 +64,20 @@ Option 2 / Вариант 2
 
 Later updates install from inside the app (menu bar → Check for Updates…).
 Следующие версии ставятся из самого приложения (строка меню → Проверить обновления…).
+
+Siri+ is free and open source. Support it on Boosty: https://boosty.to/rtm00
+Siri+ бесплатна и с открытым кодом. Поддержать на Boosty: https://boosty.to/rtm00
+EOF
+
+# A double-clickable link to the donation page.
+cat > "$staging/Support Siri+ on Boosty.webloc" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>URL</key><string>https://boosty.to/rtm00</string>
+</dict>
+</plist>
 EOF
 
 dmg="dist/SiriPlus-$version-arm64.dmg"

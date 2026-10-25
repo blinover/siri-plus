@@ -55,7 +55,7 @@ struct PromptTests {
         #expect(prompt.effort == "medium")
         #expect(prompt.system.contains("reply in English"))
         #expect(prompt.turns.map(\.role) == [.user, .assistant])
-        #expect(prompt.turns[0].imageJPEG == Data([1]))
+        #expect(prompt.turns[0].images == [Data([1])])
     }
 
     @Test func requestsRouteToTheChosenBackend() async throws {
@@ -152,7 +152,7 @@ struct ClaudeCodeTests {
     @Test func inputTagsHistoryAndAttachesImages() throws {
         let prompt = PreparedPrompt(
             system: "s",
-            turns: [.init(role: .user, text: "Что это?", imageJPEG: Data([1, 2])), .init(role: .assistant, text: "Окно"), .init(role: .user, text: "А это?")],
+            turns: [.init(role: .user, text: "Что это?", images: [Data([1, 2])]), .init(role: .assistant, text: "Окно"), .init(role: .user, text: "А это?")],
             effort: "low",
             maxTokens: 100
         )
@@ -209,7 +209,7 @@ struct OpenAITests {
     @Test func requestUsesInstructionsAndTypedContent() throws {
         let prompt = PreparedPrompt(
             system: "Be brief.",
-            turns: [.init(role: .user, text: "Что это?", imageJPEG: Data([1])), .init(role: .assistant, text: "Окно")],
+            turns: [.init(role: .user, text: "Что это?", images: [Data([1])]), .init(role: .assistant, text: "Окно")],
             effort: "low",
             maxTokens: 100
         )

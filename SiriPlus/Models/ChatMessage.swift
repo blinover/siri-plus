@@ -12,13 +12,26 @@ struct ChatMessage: Identifiable, Equatable, Sendable {
     let createdAt: Date
     /// JPEG screenshot sent together with a user message.
     let imageJPEG: Data?
+    /// Files the user attached to this message.
+    let attachments: [ChatAttachment]
 
-    init(role: Role, text: String, imageJPEG: Data? = nil) {
+    init(role: Role, text: String, imageJPEG: Data? = nil, attachments: [ChatAttachment] = []) {
         self.id = UUID()
         self.role = role
         self.text = text
         self.createdAt = Date()
         self.imageJPEG = imageJPEG
+        self.attachments = attachments
+    }
+
+    /// Every picture that goes to the model with this message.
+    var images: [Data] {
+        (imageJPEG.map { [$0] } ?? []) + attachments.compactMap(\.imageData)
+    }
+
+    /// The typed text followed by the text of attached documents.
+    var promptText: String {
+        ([text] + attachments.compactMap(\.promptBlock)).joined(separator: "\n\n")
     }
 }
 

@@ -81,7 +81,6 @@ private struct AssistantMenu: View {
                 if model.preferences.dictatesOnShortcut, !model.voice.isListening { Task { await model.toggleDictation() } }
             }
         }
-        Button("Open Siri+") { afterMenuCloses(showWindow) }
         Button("New Conversation") {
             afterMenuCloses {
                 model.newConversation()

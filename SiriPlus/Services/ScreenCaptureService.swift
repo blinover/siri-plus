@@ -48,7 +48,7 @@ final class ScreenCaptureService: ScreenCapturing {
     }
 
     /// Vision input gains nothing above ~1600 px on the long side; smaller images upload faster.
-    static func jpeg(_ image: CGImage, maxDimension: Int = 1600) -> Data? {
+    nonisolated static func jpeg(_ image: CGImage, maxDimension: Int = 1600) -> Data? {
         let scale = min(1, Double(maxDimension) / Double(max(image.width, image.height)))
         let width = Int(Double(image.width) * scale)
         let height = Int(Double(image.height) * scale)

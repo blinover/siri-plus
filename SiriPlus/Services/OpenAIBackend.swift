@@ -54,7 +54,7 @@ struct ResponsesRequest: Encodable, Sendable {
         input = prompt.turns.map { turn in
             var content: [Content] = []
             if turn.role == .user {
-                if let image = turn.imageJPEG {
+                for image in turn.images {
                     content.append(Content(type: "input_image", imageURL: "data:image/jpeg;base64,\(image.base64EncodedString())"))
                 }
                 content.append(Content(type: "input_text", text: turn.text))

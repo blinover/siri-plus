@@ -156,14 +156,18 @@ struct PreferencesView: View {
     private var updateStatus: some View {
         switch model.updates.state {
         case .checking:
-            ProgressView().controlSize(.small)
+            ProgressView().progressViewStyle(.linear).frame(width: 120)
         case .upToDate:
             statusBadge(isOK: true, ok: String(localized: "Up to date"), missing: "")
         case .available(let release):
             Button("Install \(release.version)") { Task { await model.updates.install() } }
                 .buttonStyle(.glassProminent)
         case .installing:
-            ProgressView().controlSize(.small)
+            if let fraction = model.updates.progress?.fraction {
+                ProgressView(value: fraction).progressViewStyle(.linear).frame(width: 120)
+            } else {
+                ProgressView().progressViewStyle(.linear).frame(width: 120)
+            }
         case .failed:
             statusBadge(isOK: false, ok: "", missing: String(localized: "Check failed"))
         case .idle:

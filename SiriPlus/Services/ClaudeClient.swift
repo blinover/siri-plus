@@ -237,7 +237,7 @@ struct ClaudeAPIBackend: ModelBackend {
     static func body(for prompt: PreparedPrompt, model: String) -> ClaudeMessagesRequest {
         let messages = prompt.turns.map { turn in
             var content: [ClaudeMessagesRequest.ContentBlock] = []
-            if let image = turn.imageJPEG { content.append(.jpeg(image)) }
+            content += turn.images.map { .jpeg($0) }
             content.append(.text(turn.text))
             return ClaudeMessagesRequest.Message(role: turn.role.rawValue, content: content)
         }

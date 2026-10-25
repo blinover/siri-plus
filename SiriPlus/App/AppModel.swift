@@ -72,6 +72,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isReplying = false
     @Published private(set) var isCapturing = false
     @Published private(set) var snapshot: ScreenSnapshot?
+    /// Files waiting to go with the next message, from the panel or the chat.
+    @Published private(set) var pendingAttachments: [ChatAttachment] = []
     @Published private(set) var accounts = ProviderAccounts()
     @Published private(set) var isSigningIn = false
     @Published var errorMessage: String?
@@ -142,8 +144,9 @@ final class AppModel: ObservableObject {
         guard !trimmed.isEmpty, !isReplying else { return nil }
 
         errorMessage = nil
-        messages.append(ChatMessage(role: .user, text: trimmed, imageJPEG: snapshot?.jpegData))
+        messages.append(ChatMessage(role: .user, text: trimmed, imageJPEG: snapshot?.jpegData, attachments: pendingAttachments))
         clearSnapshot()
+        pendingAttachments = []
         isReplying = true
         partialReply = ""
         let requestID = UUID()
@@ -178,6 +181,7 @@ final class AppModel: ObservableObject {
         messages = []
         chatMeeting = nil
         draft = ""
+        pendingAttachments = []
         clearSnapshot()
         errorMessage = nil
         selectedTab = .assistant
@@ -229,6 +233,23 @@ final class AppModel: ObservableObject {
         guard captureID == id else { return }
         isCapturing = false
         captureID = nil
+    }
+
+    /// Reads the files on this Mac and keeps them for the next message; unsupported files are reported.
+    func attach(_ urls: [URL]) {
+        var failures: [String] = []
+        for url in urls {
+            do {
+                pendingAttachments.append(try ChatAttachment.load(from: url))
+            } catch {
+                failures.append(error.localizedDescription)
+            }
+        }
+        errorMessage = failures.isEmpty ? nil : failures.joined(separator: "\n")
+    }
+
+    func removeAttachment(_ id: UUID) {
+        pendingAttachments.removeAll { $0.id == id }
     }
 
     func clearSnapshot() {

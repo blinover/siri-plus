@@ -99,9 +99,23 @@ protocol UpdateChecking: Sendable {
     func latestRelease() async throws -> AppRelease?
 }
 
+/// Where an update installation is, for the progress bar.
+enum UpdateProgress: Equatable, Sendable {
+    /// Bytes received so far and the total when the server reports it.
+    case downloading(received: Int64, total: Int64?)
+    case verifying
+    case installing
+
+    /// 0...1 while downloading with a known size; nil shows an indeterminate bar.
+    var fraction: Double? {
+        guard case .downloading(let received, let total?) = self, total > 0 else { return nil }
+        return min(1, Double(received) / Double(total))
+    }
+}
+
 protocol UpdateInstalling: Sendable {
     /// Downloads and verifies the release, then replaces the app after it quits. Returns when the app should quit.
-    func prepare(_ release: AppRelease) async throws
+    func prepare(_ release: AppRelease, progress: @escaping @Sendable (UpdateProgress) -> Void) async throws
 }
 
 /// Reads releases from GitHub; the repository comes from `SiriPlusUpdateRepository` in Info.plist.
@@ -129,17 +143,20 @@ struct DiskImageInstaller: UpdateInstalling {
     var appURL = Bundle.main.bundleURL
     var bundleIdentifier = Bundle.main.bundleIdentifier
 
-    func prepare(_ release: AppRelease) async throws {
+    func prepare(_ release: AppRelease, progress: @escaping @Sendable (UpdateProgress) -> Void) async throws {
         guard let image = release.diskImage else { throw UpdateError.noDiskImage }
         let parent = appURL.deletingLastPathComponent()
         guard FileManager.default.isWritableFile(atPath: parent.path) else { throw UpdateError.notWritable(parent.path) }
 
         let work = FileManager.default.temporaryDirectory.appending(path: "siriplus-update-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
-        let (downloaded, _) = try await session.download(from: image.url)
         let dmg = work.appending(path: image.name)
-        try FileManager.default.moveItem(at: downloaded, to: dmg)
+        progress(.downloading(received: 0, total: nil))
+        try await ProgressDownload.run(from: image.url, to: dmg) { received, total in
+            progress(.downloading(received: received, total: total))
+        }
 
+        progress(.verifying)
         if let checksum = release.checksum {
             let (data, _) = try await session.data(from: checksum.url)
             let expected = String(decoding: data, as: UTF8.self).split(separator: " ").first.map(String.init)?.lowercased()
@@ -147,6 +164,7 @@ struct DiskImageInstaller: UpdateInstalling {
             guard expected == actual else { throw UpdateError.checksumMismatch }
         }
 
+        progress(.installing)
         let mount = work.appending(path: "mount")
         try await Self.run("/usr/bin/hdiutil", ["attach", dmg.path, "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", mount.path])
         let staged = work.appending(path: appURL.lastPathComponent)
@@ -215,5 +233,58 @@ struct DiskImageInstaller: UpdateInstalling {
             }
             do { try process.run() } catch { continuation.resume(throwing: error) }
         }
+    }
+}
+
+/// A download that reports its progress; the async `URLSession.download` does not.
+final class ProgressDownload: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let destination: URL
+    private let onProgress: @Sendable (Int64, Int64?) -> Void
+    private var continuation: CheckedContinuation<Void, Error>?
+    private var moveError: Error?
+
+    private init(destination: URL, onProgress: @escaping @Sendable (Int64, Int64?) -> Void) {
+        self.destination = destination
+        self.onProgress = onProgress
+    }
+
+    static func run(from url: URL, to destination: URL, onProgress: @escaping @Sendable (Int64, Int64?) -> Void) async throws {
+        let download = ProgressDownload(destination: destination, onProgress: onProgress)
+        let session = URLSession(configuration: .default, delegate: download, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        let task = session.downloadTask(with: url)
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                download.continuation = continuation
+                task.resume()
+            }
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
+                    totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        onProgress(totalBytesWritten, totalBytesExpectedToWrite > 0 ? totalBytesExpectedToWrite : nil)
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        // The temporary file is deleted when this method returns, so it is moved right here.
+        if let status = (downloadTask.response as? HTTPURLResponse)?.statusCode, status != 200 {
+            moveError = UpdateError.failed(String(localized: "The update could not be downloaded (\(status))."))
+            return
+        }
+        do {
+            try FileManager.default.moveItem(at: location, to: destination)
+        } catch {
+            moveError = error
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let result = error ?? moveError
+        let continuation = continuation
+        self.continuation = nil
+        if let result { continuation?.resume(throwing: result) } else { continuation?.resume() }
     }
 }

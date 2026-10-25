@@ -19,6 +19,9 @@ final class UpdateModel: ObservableObject {
     @Published private(set) var lastChecked: Date?
     /// A short message after a check the user asked for: up to date, or why it failed.
     @Published private(set) var notice: String?
+    /// True while a check the user asked for runs, so the prompt can show it.
+    @Published private(set) var isCheckingVisibly = false
+    @Published private(set) var progress: UpdateProgress?
 
     private let checker: any UpdateChecking
     private let installer: any UpdateInstalling
@@ -63,6 +66,11 @@ final class UpdateModel: ObservableObject {
     func check(userInitiated: Bool) async {
         if case .installing = state { return }
         state = .checking
+        if userInitiated {
+            notice = nil
+            isCheckingVisibly = true
+        }
+        defer { isCheckingVisibly = false }
         do {
             let release = try await checker.latestRelease()
             lastChecked = Date()
@@ -86,10 +94,14 @@ final class UpdateModel: ObservableObject {
         guard case .available(let release) = state else { return }
         offer = nil
         state = .installing(release)
+        progress = .downloading(received: 0, total: nil)
         do {
-            try await installer.prepare(release)
+            try await installer.prepare(release) { [weak self] step in
+                Task { @MainActor in self?.progress = step }
+            }
             quit()
         } catch {
+            progress = nil
             state = .failed(error.localizedDescription)
             show(error.localizedDescription)
         }

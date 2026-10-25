@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatView: View {
     @ObservedObject var model: AppModel
     @FocusState private var isComposerFocused: Bool
+    @State private var isDropTargeted = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -48,11 +49,33 @@ struct ChatView: View {
                     if let snapshot = model.snapshot {
                         snapshotCard(snapshot)
                     }
+                    if !model.pendingAttachments.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(model.pendingAttachments) { attachment in
+                                    AttachmentChip(attachment: attachment) { model.removeAttachment(attachment.id) }
+                                }
+                            }
+                        }
+                    }
                     composer
                 }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 14)
+        }
+        // Files dropped anywhere on the chat go with the next message.
+        .dropDestination(for: URL.self) { urls, _ in
+            model.attach(urls)
+            return !urls.isEmpty
+        } isTargeted: { isDropTargeted = $0 }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                    .padding(8)
+                    .allowsHitTesting(false)
+            }
         }
         .navigationTitle("Assistant")
         .toolbar {
@@ -184,6 +207,14 @@ struct ChatView: View {
             .disabled(model.isCapturing)
             .help("Capture the main display without the Siri+ window. macOS will ask for permission.")
 
+            Button(action: chooseFiles) {
+                Label("Attach Files", systemImage: "paperclip")
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .help("Attach Files")
+
             if model.voice.isListening {
                 Group {
                     if model.voice.dictation.isEmpty {
@@ -232,7 +263,7 @@ struct ChatView: View {
                     .buttonStyle(.glassProminent)
                     .buttonBorderShape(.circle)
                     .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty)
                     .help("Send (Return)")
             }
         }
@@ -241,8 +272,19 @@ struct ChatView: View {
     }
 
     private func send() {
-        guard model.send(model.draft) != nil else { return }
+        let typed = model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Attached files alone are a request too.
+        let text = typed.isEmpty && !model.pendingAttachments.isEmpty ? String(localized: "Analyze the attached files.") : typed
+        guard model.send(text) != nil else { return }
         model.draft = ""
+    }
+
+    private func chooseFiles() {
+        let picker = NSOpenPanel()
+        picker.allowsMultipleSelection = true
+        picker.canChooseDirectories = false
+        picker.message = String(localized: "Choose images, PDFs or text files for Siri+ to analyze.")
+        if picker.runModal() == .OK { model.attach(picker.urls) }
     }
 }
 
@@ -275,6 +317,12 @@ private struct MessageRow: View {
                             .labelStyle(.iconOnly)
                             .font(.caption2).foregroundStyle(.secondary)
                     }
+                }
+                ForEach(message.attachments) { attachment in
+                    Label(attachment.name, systemImage: attachment.symbol)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 Text(message.text)
                     .textSelection(.enabled)

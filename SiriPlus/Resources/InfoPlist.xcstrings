@@ -1,46 +1,83 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "CFBundleDisplayName": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri+"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Siri+"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri+"
           }
         }
       }
     },
-    "NSAudioCaptureUsageDescription": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri+ слушает звук приложения созвона, чтобы подсказывать по теме разговора."
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "SiriPlus"
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri+ распознаёт ваш голос на созвоне на этом Mac, чтобы подсказки учитывали обе стороны разговора."
+    "NSAudioCaptureUsageDescription" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siri+ слушает звук приложения созвона, чтобы подсказывать по теме разговора."
           }
         }
       }
     },
-    "NSSpeechRecognitionUsageDescription": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Siri+ превращает речь на созвоне в текст на этом Mac."
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Siri+ recognizes your voice during a meeting on this Mac so hints follow both sides of the conversation."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri+ распознаёт ваш голос на созвоне на этом Mac, чтобы подсказки учитывали обе стороны разговора."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Privacy - Speech Recognition Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Siri+ turns meeting speech into text on this Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri+ превращает речь на созвоне в текст на этом Mac."
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

@@ -48,7 +48,7 @@ struct PreparedPrompt: Sendable, Equatable {
     struct Turn: Sendable, Equatable {
         let role: ChatMessage.Role
         let text: String
-        var imageJPEG: Data?
+        var images: [Data] = []
     }
 
     let system: String
@@ -85,7 +85,7 @@ enum AssistantPrompts {
         }
         return PreparedPrompt(
             system: system,
-            turns: request.messages.map { .init(role: $0.role, text: $0.text, imageJPEG: $0.imageJPEG) },
+            turns: request.messages.map { .init(role: $0.role, text: $0.promptText, images: $0.images) },
             effort: request.replyStyle == .brief ? "low" : "medium",
             maxTokens: 32_000,
             // The transcript is resent with every question about the meeting.
