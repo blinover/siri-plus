@@ -58,7 +58,7 @@ First launch:
 ## Meetings
 
 - **Audio source.** A running call app is picked automatically. You can choose any other running app (for example a browser with Google Meet) or “All system audio”, which works with any call.
-- **Your voice** comes from the microphone as a separate channel. Headphones work best; otherwise the microphone also picks up the other side.
+- **Your voice** comes from the microphone as a separate channel, through macOS voice processing: echo cancellation subtracts what the speakers play. “Me” lines that nearly repeat the other side from the last 10 seconds are dropped as echo. Headphones are still the most reliable.
 - **Language.** “System” listens for your system languages and keyboard layouts at once. For each speaker, the language whose recognizer is clearly more confident over the first phrases is kept and the others stop. You can also fix the language in Settings.
 - **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown.
 - **Questions** are spotted locally by question words after a short pause, since on-device Russian recognition adds no punctuation.

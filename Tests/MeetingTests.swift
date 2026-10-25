@@ -44,6 +44,28 @@ struct TranscriptTests {
         #expect(transcript.turns[0].finalText == "мы считаем что")
     }
 
+    @Test func echoOfTheOtherSideIsDropped() {
+        var transcript = Transcript()
+        transcript.apply(segment(.them, "что у нас все собрались то есть ба Влада не будет", final: true, at: 0))
+        transcript.apply(segment(.them, "Лена нам нужна", final: true, at: 1))
+        transcript.apply(segment(.them, "с моих прям внаглую", final: true, at: 2))
+        transcript.apply(segment(.them, "прямо в нар во всех вы цып", final: true, at: 3))
+        transcript.apply(segment(.me, "Елена вам", final: false, at: 3.5))
+        transcript.apply(segment(.me, "Елена вам нужна", final: true, at: 4))
+        transcript.apply(segment(.me, "с моих прям в наглую", final: true, at: 5))
+        transcript.apply(segment(.me, "на всех Вып", final: true, at: 6))
+        #expect(transcript.turns.allSatisfy { $0.speaker == .them })
+    }
+
+    @Test func ownAnswersAndLateRepeatsAreKept() {
+        var transcript = Transcript()
+        transcript.apply(segment(.them, "когда будет готов план переезда", final: true, at: 0))
+        transcript.apply(segment(.me, "план будет готов к пятнице", final: true, at: 2))
+        transcript.apply(segment(.me, "да", final: true, at: 3))
+        transcript.apply(segment(.me, "когда будет готов план", final: true, at: 30))
+        #expect(transcript.turns.filter { $0.speaker == .me }.map(\.text) == ["план будет готов к пятнице да", "когда будет готов план"])
+    }
+
     @Test func emptyVolatileResultRemovesEmptyTurn() {
         var transcript = Transcript()
         transcript.apply(segment(.them, "э", final: false, at: 0))

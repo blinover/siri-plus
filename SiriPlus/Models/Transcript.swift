@@ -35,6 +35,8 @@ struct TranscriptTurn: Identifiable, Codable, Equatable, Sendable {
 struct Transcript: Sendable {
     /// A pause longer than this starts a new turn even for the same speaker.
     static let turnGap: TimeInterval = 6
+    /// Without headphones the microphone hears the speakers, so the other side comes back as "Me" within seconds.
+    static let echoWindow: TimeInterval = 10
 
     private(set) var turns: [TranscriptTurn] = []
 
@@ -44,6 +46,14 @@ struct Transcript: Sendable {
     @discardableResult
     mutating func apply(_ segment: TranscriptSegment) -> TranscriptTurn? {
         let text = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if segment.speaker == .me, isEcho(of: text, at: segment.timestamp) {
+            // Also forget the echo shown while it was being recognised.
+            if let index = turns.lastIndex(where: { $0.speaker == .me && !$0.volatileText.isEmpty }) {
+                turns[index].volatileText = ""
+                if turns[index].text.isEmpty { turns.remove(at: index) }
+            }
+            return nil
+        }
         let index = activeTurnIndex(for: segment)
 
         guard let index else {
@@ -89,6 +99,42 @@ struct Transcript: Sendable {
     /// Words spoken by anyone in final text, used to pace topic hints.
     var finalWordCount: Int {
         turns.reduce(0) { $0 + $1.finalText.split(whereSeparator: \.isWhitespace).count }
+    }
+
+    /// Whether "Me" text repeats what the other side said moments ago: at least 70% of three or more words,
+    /// counting words that differ by one letter ("Лена" and "Елена") as the same.
+    func isEcho(of text: String, at time: Date) -> Bool {
+        let words = Self.words(in: text)
+        guard words.count >= 3 else { return false }
+        let heard = Set(turns
+            .filter { $0.speaker == .them && time.timeIntervalSince($0.updatedAt) < Self.echoWindow }
+            .flatMap { Self.words(in: $0.text) })
+        guard !heard.isEmpty else { return false }
+        let repeated = words.filter { word in heard.contains(word) || heard.contains { Self.differByOneLetter($0, word) } }
+        return Double(repeated.count) >= Double(words.count) * 0.7
+    }
+
+    private static func words(in text: String) -> [String] {
+        text.lowercased().replacingOccurrences(of: "ё", with: "е")
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+    }
+
+    /// One substitution, insertion or deletion; short words such as "в" must match exactly.
+    private static func differByOneLetter(_ a: String, _ b: String) -> Bool {
+        let a = Array(a), b = Array(b)
+        guard max(a.count, b.count) >= 3, abs(a.count - b.count) <= 1 else { return false }
+        var i = 0, j = 0, edits = 0
+        while i < a.count, j < b.count {
+            if a[i] == b[j] {
+                i += 1; j += 1
+                continue
+            }
+            edits += 1
+            if edits > 1 { return false }
+            if a.count > b.count { i += 1 } else if b.count > a.count { j += 1 } else { i += 1; j += 1 }
+        }
+        return edits + (a.count - i) + (b.count - j) <= 1
     }
 
     private func activeTurnIndex(for segment: TranscriptSegment) -> Int? {
