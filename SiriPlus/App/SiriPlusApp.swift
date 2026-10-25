@@ -18,6 +18,8 @@ struct SiriPlusApp: App {
         model.callMonitor.start()
         _updatePrompt = State(initialValue: UpdatePrompt(updates: model.updates))
         model.updates.start()
+        Task { await model.refreshAccounts() }
+        model.usage.start { (model.accounts.claudeCode.signedIn, model.accounts.chatGPTEmail != nil) }
         AppDelegate.openURL = { url in
             switch url.host() {
             case "ask":
@@ -43,7 +45,7 @@ struct SiriPlusApp: App {
         Window("Siri+", id: "assistant") {
             WorkspaceView(model: model)
         }
-        .defaultSize(width: 880, height: 600)
+        .defaultSize(width: 1040, height: 640)
         .windowResizability(.contentMinSize)
 
         MenuBarExtra {
@@ -81,7 +83,7 @@ private struct AssistantMenu: View {
                 if model.preferences.dictatesOnShortcut, !model.voice.isListening { Task { await model.toggleDictation() } }
             }
         }
-        Button("New Conversation") {
+        Button("New Chat") {
             afterMenuCloses {
                 model.newConversation()
                 showWindow()
@@ -108,6 +110,9 @@ private struct AssistantMenu: View {
         Divider()
         if model.isModelReady {
             Text("\(model.preferences.provider.title) connected")
+            if let usage = model.usage.usage(for: model.preferences.selection) {
+                ForEach(usage.limits) { Text($0.summary) }
+            }
         } else {
             Text("Sign-in required")
         }

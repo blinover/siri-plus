@@ -1,7 +1,7 @@
 import Foundation
 
-struct ChatMessage: Identifiable, Equatable, Sendable {
-    enum Role: String, Sendable {
+struct ChatMessage: Identifiable, Equatable, Codable, Sendable {
+    enum Role: String, Codable, Sendable {
         case user
         case assistant
     }
@@ -211,9 +211,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         ModelSelection(provider: provider, claudeModel: model, claudeAuth: claudeAuth, openAIModel: openAIModel, openAIAuth: openAIAuth)
     }
 
-    /// The locale for speech recognition: the chosen one, or the first system language.
-    var speechLocale: Locale {
-        guard transcriptionLocale == Self.systemLocale else { return Locale(identifier: transcriptionLocale) }
-        return Locale(identifier: Locale.preferredLanguages.first ?? "en-US")
+    /// The languages speech is recognized in: the chosen one, or every language this Mac's user likely speaks.
+    var speechLocales: [Locale] {
+        guard transcriptionLocale == Self.systemLocale else { return [Locale(identifier: transcriptionLocale)] }
+        return SpeechLanguages.automatic()
     }
 }

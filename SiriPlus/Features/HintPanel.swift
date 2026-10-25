@@ -176,7 +176,7 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         let picker = NSOpenPanel()
         picker.allowsMultipleSelection = true
         picker.canChooseDirectories = false
-        picker.message = String(localized: "Choose images, PDFs or text files for Siri+ to analyze.")
+        picker.message = String(localized: "Choose images, PDFs, text, audio or video files for Siri+ to analyze.")
         isChoosingFiles = true
         NSApplication.shared.activate()
         let response = picker.runModal()
@@ -282,8 +282,9 @@ private struct SidePanelView: View {
 
     /// One line like Spotlight's: the orb moves the panel, then the question and its tools.
     private var inputRow: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
             dragHandle
+                .padding(.top, 2)
             Group {
                 if voice.isListening {
                     // Recognized words appear as they are spoken; the part still changing is dimmed.
@@ -296,11 +297,8 @@ private struct SidePanelView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    TextField("Ask anything…", text: $question, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .lineLimit(1...6)
+                    GrowingTextEditor(text: $question, placeholder: "Ask anything…", font: .system(size: 17), onSubmit: submit)
                         .focused($isInputFocused)
-                        .onSubmit(submit)
                 }
             }
             .font(.system(size: 17, weight: .regular))
@@ -318,7 +316,7 @@ private struct SidePanelView: View {
                     .tint(voice.isListening ? .red : nil)
                     .help(voice.isListening ? String(localized: "Stop and send") : String(localized: "Dictate (⌃⌥Space)"))
                     if !model.messages.isEmpty {
-                        toolButton(String(localized: "New Conversation"), symbol: "square.and.pencil") { model.newConversation() }
+                        toolButton(String(localized: "New Chat"), symbol: "square.and.pencil") { model.newConversation() }
                     }
                     toolButton(String(localized: "Open the Siri+ window"), symbol: "arrow.up.left.and.arrow.down.right") { overlay.openApp() }
                     toolButton(String(localized: "Hide (Esc)"), symbol: "xmark") { overlay.hide() }
@@ -348,12 +346,13 @@ private struct SidePanelView: View {
 
     @ViewBuilder
     private var attachmentsRow: some View {
-        if !model.pendingAttachments.isEmpty {
+        if !model.pendingAttachments.isEmpty || !model.processingAttachments.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(model.pendingAttachments) { attachment in
                         AttachmentChip(attachment: attachment) { model.removeAttachment(attachment.id) }
                     }
+                    ForEach(model.processingAttachments, id: \.self) { ProcessingChip(name: $0) }
                 }
                 .padding(.horizontal, 14)
             }

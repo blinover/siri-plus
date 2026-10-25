@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 400" width="920" height="400" role="img" aria-labelledby="title desc">
+  <title id="title">How Siri+ works</title>
+  <desc id="desc">Call audio, your microphone, voice commands and files are processed on the Mac: audio is captured, speech is recognized on device and questions are spotted. Only a text excerpt goes to Claude or ChatGPT, which return hints, chat answers and meeting summaries.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f8fa; }
+      .card { fill: #ffffff; stroke: #d0d7de; }
+      .mac { fill: #ffffff; stroke: url(#siri); }
+      .step { fill: #f3f0ff; stroke: #d8cffc; }
+      .cloud { fill: #eef6ff; stroke: #9cc7f5; }
+      .title { fill: #1f2328; font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .text { fill: #1f2328; font: 500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .note { fill: #59636e; font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      .label { fill: #59636e; font: 600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; letter-spacing: .06em; }
+      .arrow { stroke: #8c959f; stroke-width: 1.6; fill: none; }
+      .head { fill: #8c959f; }
+      @media (prefers-color-scheme: dark) {
+        .bg { fill: #0d1117; }
+        .card { fill: #161b22; stroke: #3d444d; }
+        .mac { fill: #161b22; }
+        .step { fill: #231d3d; stroke: #4b3f80; }
+        .cloud { fill: #0f2338; stroke: #2f5f91; }
+        .title, .text { fill: #e6edf3; }
+        .note, .label { fill: #9198a1; }
+        .arrow { stroke: #6e7681; }
+        .head { fill: #6e7681; }
+      }
+    </style>
+    <linearGradient id="siri" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b8cff"/>
+      <stop offset=".5" stop-color="#b45cff"/>
+      <stop offset="1" stop-color="#ff5c8a"/>
+    </linearGradient>
+    <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="head" d="M0 0L10 5L0 10z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="920" height="400" rx="16"/>
+
+  <!-- Inputs -->
+  <text class="label" x="24" y="40">IN</text>
+  <rect class="card" x="24" y="56" width="210" height="52" rx="12"/>
+  <text class="text" x="40" y="78">Call audio</text>
+  <text class="note" x="40" y="96">Zoom, Teams, browser, any app</text>
+  <rect class="card" x="24" y="120" width="210" height="52" rx="12"/>
+  <text class="text" x="40" y="142">Your microphone</text>
+  <text class="note" x="40" y="160">“Me” and “Them” kept apart</text>
+  <rect class="card" x="24" y="184" width="210" height="52" rx="12"/>
+  <text class="text" x="40" y="206">Voice command</text>
+  <text class="note" x="40" y="224">⌃⌥Space, like Siri</text>
+  <rect class="card" x="24" y="248" width="210" height="52" rx="12"/>
+  <text class="text" x="40" y="270">Files</text>
+  <text class="note" x="40" y="288">audio, video, PDF, images, code</text>
+
+  <path class="arrow" d="M234 82H266" marker-end="url(#tip)"/>
+  <path class="arrow" d="M234 146H266" marker-end="url(#tip)"/>
+  <path class="arrow" d="M234 210H266" marker-end="url(#tip)"/>
+  <path class="arrow" d="M234 274H266" marker-end="url(#tip)"/>
+
+  <!-- On the Mac -->
+  <rect class="mac" x="272" y="28" width="300" height="300" rx="16" stroke-width="2"/>
+  <text class="title" x="292" y="56">On your Mac</text>
+  <rect class="step" x="292" y="72" width="260" height="64" rx="10"/>
+  <text class="text" x="308" y="98">1 · Capture the sound</text>
+  <text class="note" x="308" y="118">ScreenCaptureKit and microphone</text>
+  <rect class="step" x="292" y="148" width="260" height="64" rx="10"/>
+  <text class="text" x="308" y="174">2 · Recognize speech</text>
+  <text class="note" x="308" y="194">on device, picks the language itself</text>
+  <rect class="step" x="292" y="224" width="260" height="84" rx="10"/>
+  <text class="text" x="308" y="250">3 · Spot questions, keep notes</text>
+  <text class="note" x="308" y="270">transcripts, chats and meeting</text>
+  <text class="note" x="308" y="288">history stay on this Mac</text>
+
+  <!-- To the cloud -->
+  <path class="arrow" d="M572 110H636" marker-end="url(#tip)"/>
+  <text class="note" x="578" y="100">text only</text>
+
+  <rect class="cloud" x="642" y="40" width="254" height="104" rx="14"/>
+  <text class="title" x="660" y="68">Claude or ChatGPT</text>
+  <text class="note" x="660" y="92">browser sign-in to your</text>
+  <text class="note" x="660" y="110">subscription, or an API key</text>
+  <text class="note" x="660" y="128">the only part in the cloud</text>
+
+  <!-- Results -->
+  <path class="arrow" d="M769 144V170" marker-end="url(#tip)"/>
+  <text class="label" x="642" y="166">OUT</text>
+  <rect class="card" x="642" y="176" width="254" height="44" rx="12"/>
+  <text class="text" x="660" y="203">Hints beside the call</text>
+  <rect class="card" x="642" y="228" width="254" height="44" rx="12"/>
+  <text class="text" x="660" y="255">Answers in chat and the ask panel</text>
+  <rect class="card" x="642" y="280" width="254" height="44" rx="12"/>
+  <text class="text" x="660" y="307">Meeting summary and action items</text>
+
+  <text class="note" x="24" y="368">Audio never leaves the Mac. The cloud model sees your messages and a recent piece of the transcript, only when a hint or answer is needed.</text>
+</svg>

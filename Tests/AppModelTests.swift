@@ -51,7 +51,7 @@ struct AppModelTests {
 
         model.askAbout(meeting)
         #expect(model.messages.isEmpty)
-        #expect(model.selectedTab == .assistant)
+        #expect(model.selectedTab == .chat)
         let task = try #require(model.send("Что решили?"))
         #expect(await service.waitForRequest().meeting?.id == meeting.id)
         service.complete("Переезд в ноябре")
@@ -195,6 +195,7 @@ struct AppModelTests {
             preferencesStore: PreferencesStore(defaults: UserDefaults(suiteName: UUID().uuidString)!),
             credentials: credentials,
             historyStore: MeetingHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).json")),
+            chatStore: ChatHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "chats-\(UUID().uuidString).json")),
             microphoneUsage: NoMicrophoneUsage()
         )
     }
@@ -267,7 +268,8 @@ extension Credentials {
             claudeKey: MemorySecretStore(),
             openAIKey: MemorySecretStore(),
             chatGPT: ChatGPTAccount(store: MemorySecretStore()),
-            claudeCodeStatus: { ClaudeCodeStatus() }
+            claudeCodeStatus: { ClaudeCodeStatus() },
+            claudeUsage: { throw ClaudeCodeError.notInstalled }
         )
     }
 }

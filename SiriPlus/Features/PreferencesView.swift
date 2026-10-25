@@ -63,7 +63,7 @@ struct PreferencesView: View {
             Toggle("Recognize my voice too (microphone)", isOn: $model.preferences.capturesMicrophone)
             Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
                 .help("A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.")
-            Picker("Keep meetings in History", selection: $model.preferences.historyRetentionDays) {
+            Picker("Keep chats and meetings", selection: $model.preferences.historyRetentionDays) {
                 Text("Forever").tag(0)
                 ForEach([7, 30, 90, 365], id: \.self) { days in
                     Text("\(days) days").tag(days)
@@ -89,7 +89,7 @@ struct PreferencesView: View {
         } header: {
             Label("Conversation", systemImage: "text.bubble")
         } footer: {
-            footnote("Conversation history and screenshots are not saved to disk.")
+            footnote("Chats and meetings are saved on this Mac for the period chosen under Meeting.")
         }
     }
 
@@ -198,6 +198,9 @@ struct PreferencesView: View {
                     detail: status.subscription.map { $0.capitalized } ?? String(localized: "Requests use your Claude subscription limits through Claude Code."),
                     ok: true
                 )
+                UsageView(usage: model.usage.claude, error: model.usage.claudeError, isRefreshing: model.usage.isRefreshing) {
+                    Task { await model.refreshUsage() }
+                }
             } else {
                 LabeledContent {
                     signInButton(String(localized: "Sign In to Claude")) { await model.signInToClaude() }
@@ -230,6 +233,9 @@ struct PreferencesView: View {
                         .buttonStyle(.glass)
                 } label: {
                     accountLabel(email, detail: String(localized: "Requests use your ChatGPT subscription limits."), ok: true)
+                }
+                UsageView(usage: model.usage.chatGPT, error: model.usage.chatGPTError, isRefreshing: model.usage.isRefreshing) {
+                    Task { await model.refreshUsage() }
                 }
             } else {
                 LabeledContent {
@@ -327,8 +333,12 @@ struct PreferencesView: View {
             .foregroundStyle(.secondary)
     }
 
+    /// "English, Russian": the languages "System" listens for.
     private var systemLanguageName: String {
-        let code = Locale(identifier: Locale.preferredLanguages.first ?? "en").language.languageCode?.identifier ?? "en"
-        return Locale.current.localizedString(forLanguageCode: code)?.capitalized ?? code
+        SpeechLanguages.automatic().compactMap { locale in
+            let code = locale.language.languageCode?.identifier ?? locale.identifier
+            return Locale.current.localizedString(forLanguageCode: code)?.capitalized ?? code
+        }
+        .joined(separator: ", ")
     }
 }

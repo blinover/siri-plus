@@ -27,6 +27,9 @@ struct DictationCandidate: Equatable, Sendable {
     private var finalConfidence: [Double] = []
     private var volatileConfidence: [Double] = []
 
+    /// Whether the recognizer has rated any words yet. It rates only fixed words, not those still being recognized.
+    var isRated: Bool { !finalConfidence.isEmpty || !volatileConfidence.isEmpty }
+
     /// Mean word confidence so far; a model listening to another language scores far lower.
     var score: Double {
         let all = finalConfidence + volatileConfidence
@@ -45,9 +48,21 @@ struct DictationCandidate: Equatable, Sendable {
 
     /// The candidate the user most likely spoke: the highest confidence, the first language on a tie.
     static func best(of candidates: [DictationCandidate]) -> DictationCandidate? {
-        candidates.enumerated().max { lhs, rhs in
-            lhs.element.score == rhs.element.score ? lhs.offset > rhs.offset : lhs.element.score < rhs.element.score
-        }?.element
+        bestIndex(of: candidates).map { candidates[$0] }
+    }
+
+    static func bestIndex(of candidates: [DictationCandidate]) -> Int? {
+        candidates.indices.max { lhs, rhs in
+            candidates[lhs].score == candidates[rhs].score ? lhs > rhs : candidates[lhs].score < candidates[rhs].score
+        }
+    }
+
+    /// The candidate to show: the `current` one stays until another is more confident by `margin`,
+    /// so the text does not jump between languages on every word.
+    static func leader(of candidates: [DictationCandidate], current: Int?, margin: Double = 0.05) -> Int? {
+        guard let best = bestIndex(of: candidates) else { return nil }
+        guard let current, candidates.indices.contains(current) else { return best }
+        return candidates[best].score > candidates[current].score + margin ? best : current
     }
 }
 
@@ -72,6 +87,7 @@ final class VoiceInput: ObservableObject {
     private var engine: AVAudioEngine?
     private var channels: [ChannelTranscriber] = []
     private var candidates: [DictationCandidate] = []
+    private var leader: Int?
     private var results: [Task<Void, Never>] = []
     private var watchdog: Task<Void, Never>?
     private var lastChange = Date()
@@ -92,16 +108,7 @@ final class VoiceInput: ObservableObject {
         isListening = true
         do {
             guard await AVCaptureDevice.requestAccess(for: .audio) else { throw MeetingError.microphoneDenied }
-            var resolved: [Locale] = []
-            for locale in locales {
-                guard let supported = try? await ChannelTranscriber.prepare(locale: locale),
-                      !resolved.contains(where: { $0.identifier == supported.identifier }) else { continue }
-                resolved.append(supported)
-            }
-            guard !resolved.isEmpty else {
-                throw MeetingError.unsupportedLocale(locales.map(\.identifier).joined(separator: ", "))
-            }
-
+            let resolved = try await ChannelTranscriber.prepare(locales: locales)
             var channels: [ChannelTranscriber] = []
             for locale in resolved {
                 let channel = try await ChannelTranscriber(speaker: .me, locale: locale)
@@ -114,6 +121,7 @@ final class VoiceInput: ObservableObject {
             }
             self.channels = channels
             candidates = Array(repeating: DictationCandidate(), count: channels.count)
+            leader = nil
 
             let engine = AVAudioEngine()
             Self.feed(engine.inputNode, to: channels)
@@ -158,24 +166,13 @@ final class VoiceInput: ObservableObject {
         if deliver, !text.isEmpty { handler?(text) }
     }
 
-    /// The languages to listen in: the one chosen in Settings, or the first two system languages.
-    static func locales(for preferences: AssistantPreferences) -> [Locale] {
-        guard preferences.transcriptionLocale == AssistantPreferences.systemLocale else { return [preferences.speechLocale] }
-        var seen: Set<String> = []
-        var locales: [Locale] = []
-        for identifier in Locale.preferredLanguages {
-            let locale = Locale(identifier: identifier)
-            guard let language = locale.language.languageCode?.identifier, seen.insert(language).inserted else { continue }
-            locales.append(locale)
-            if locales.count == 2 { break }
-        }
-        return locales.isEmpty ? [Locale(identifier: "en-US")] : locales
-    }
-
     private func receive(_ index: Int, _ text: String, confidence: [Double], isFinal: Bool) {
         guard isListening, candidates.indices.contains(index) else { return }
         candidates[index].apply(text, confidence: confidence, isFinal: isFinal)
-        let best = DictationCandidate.best(of: candidates)?.text ?? DictationText()
+        // Words still being recognized move the scores a lot; the shown language changes on them only with
+        // a clear lead, fixed words settle it.
+        leader = DictationCandidate.leader(of: candidates, current: isFinal ? nil : leader)
+        let best = leader.map { candidates[$0].text } ?? DictationText()
         if best != dictation {
             dictation = best
             lastChange = Date()

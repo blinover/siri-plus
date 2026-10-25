@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import ScreenCaptureKit
 import Speech
+import Synchronization
 
 /// Where the other participants' voices come from.
 struct MeetingAudioSource: Identifiable, Hashable, Sendable {
@@ -44,7 +45,8 @@ struct MeetingAudioSource: Identifiable, Hashable, Sendable {
 
 struct MeetingConfiguration: Sendable {
     let source: MeetingAudioSource
-    let locale: Locale
+    /// Candidate languages; with several, each speaker's language is picked from their first sentences.
+    let locales: [Locale]
     let capturesMicrophone: Bool
     /// Names and terms the recogniser should expect.
     var contextualStrings: [String] = []
@@ -109,8 +111,12 @@ protocol MeetingService: AnyObject {
 @MainActor
 final class LiveMeetingService: MeetingService {
     private var capture: MeetingAudioCapture?
+    /// Recognisers still listening: every candidate language until a speaker's language is chosen.
     private var channels: [ChannelTranscriber] = []
+    private var routes: [Speaker: SpeakerRoute] = [:]
+    private var locks: [Speaker: LanguageLock] = [:]
     private var resultTasks: [Task<Void, Never>] = []
+    private var closing: [Task<Void, Never>] = []
     private var continuation: AsyncThrowingStream<MeetingEvent, Error>.Continuation?
 
     func start(_ configuration: MeetingConfiguration) async throws -> AsyncThrowingStream<MeetingEvent, Error> {
@@ -121,31 +127,33 @@ final class LiveMeetingService: MeetingService {
             if configuration.capturesMicrophone, !(await AVCaptureDevice.requestAccess(for: .audio)) {
                 throw MeetingError.microphoneDenied
             }
-            let locale = try await ChannelTranscriber.prepare(locale: configuration.locale)
+            let locales = try await ChannelTranscriber.prepare(locales: configuration.locales)
             var speakers: [Speaker] = [.them]
             if configuration.capturesMicrophone { speakers.append(.me) }
 
             for speaker in speakers {
-                let channel = try await ChannelTranscriber(speaker: speaker, locale: locale)
-                try await channel.start(contextualStrings: configuration.contextualStrings)
-                channels.append(channel)
-                resultTasks.append(Task {
-                    do {
-                        for try await result in channel.results {
-                            continuation.yield(.segment(TranscriptSegment(
-                                speaker: speaker,
-                                text: String(result.text.characters),
-                                isFinal: result.isFinal,
-                                timestamp: Date()
-                            )))
+                var group: [ChannelTranscriber] = []
+                for (index, locale) in locales.enumerated() {
+                    let channel = try await ChannelTranscriber(speaker: speaker, locale: locale)
+                    try await channel.start(contextualStrings: configuration.contextualStrings)
+                    group.append(channel)
+                    resultTasks.append(Task { [weak self] in
+                        do {
+                            for try await result in channel.results {
+                                self?.receive(speaker, index, result)
+                            }
+                        } catch {
+                            // A language dropped after the choice may end with an error; only the kept one counts.
+                            if self?.isKept(speaker, index) ?? true { continuation.finish(throwing: error) }
                         }
-                    } catch {
-                        continuation.finish(throwing: error)
-                    }
-                })
+                    })
+                }
+                channels += group
+                routes[speaker] = SpeakerRoute(group)
+                locks[speaker] = LanguageLock(count: group.count)
             }
 
-            let routes = Dictionary(uniqueKeysWithValues: channels.map { ($0.speaker, $0) })
+            let routes = self.routes
             let meters = Dictionary(uniqueKeysWithValues: speakers.map { ($0, LevelMeter(speaker: $0, continuation: continuation)) })
             let capture = MeetingAudioCapture(
                 onBuffer: { speaker, buffer in
@@ -168,11 +176,127 @@ final class LiveMeetingService: MeetingService {
         capture = nil
         // Finalising flushes the text still being recognised before the streams end.
         for channel in channels { await channel.finish() }
+        for task in closing { await task.value }
         for task in resultTasks { await task.value }
+        for (speaker, var lock) in locks {
+            for case .segment(let text, let isFinal) in lock.finish() {
+                continuation?.yield(.segment(TranscriptSegment(speaker: speaker, text: text, isFinal: isFinal, timestamp: Date())))
+            }
+        }
         channels = []
+        routes = [:]
+        locks = [:]
+        closing = []
         resultTasks = []
         continuation?.finish()
         continuation = nil
+    }
+
+    private func receive(_ speaker: Speaker, _ index: Int, _ result: DictationTranscriber.Result) {
+        guard var lock = locks[speaker] else { return }
+        let outputs = lock.apply(
+            index,
+            text: String(result.text.characters),
+            confidence: result.text.runs.compactMap(\.transcriptionConfidence),
+            isFinal: result.isFinal
+        )
+        locks[speaker] = lock
+        for output in outputs {
+            switch output {
+            case .segment(let text, let isFinal):
+                continuation?.yield(.segment(TranscriptSegment(speaker: speaker, text: text, isFinal: isFinal, timestamp: Date())))
+            case .locked(let kept):
+                // The other languages stop listening; one recogniser per speaker is enough from here on.
+                let dropped = routes[speaker]?.keep(kept) ?? []
+                channels.removeAll { channel in dropped.contains { $0 === channel } }
+                closing.append(Task {
+                    for channel in dropped { await channel.finish() }
+                })
+            }
+        }
+    }
+
+    private func isKept(_ speaker: Speaker, _ index: Int) -> Bool {
+        locks[speaker]?.chosen.map { $0 == index } ?? true
+    }
+}
+
+/// Picks one speaker's language. Every candidate language listens to the first sentences; once one is clearly
+/// more confident, it is kept and the others stop. Until then the leading reading is shown as text still being
+/// recognised, so nothing in a wrong language is ever fixed in the transcript.
+struct LanguageLock: Sendable {
+    enum Output: Equatable, Sendable {
+        case segment(String, isFinal: Bool)
+        case locked(Int)
+    }
+
+    /// Fixed words the leader needs before it can win, and its lead in mean confidence.
+    static let minimumWords = 3
+    static let margin = 0.05
+    /// After this many fixed words the leader wins even by a hair.
+    static let decisiveWords = 12
+    /// A language that has rated nothing by then is out (it hears nothing it can recognise).
+    static let walkoverWords = 40
+
+    private(set) var candidates: [DictationCandidate]
+    private(set) var chosen: Int?
+
+    init(count: Int) {
+        candidates = Array(repeating: DictationCandidate(), count: count)
+        chosen = count == 1 ? 0 : nil
+    }
+
+    mutating func apply(_ index: Int, text: String, confidence: [Double], isFinal: Bool) -> [Output] {
+        if let chosen { return index == chosen ? [.segment(text, isFinal: isFinal)] : [] }
+        guard candidates.indices.contains(index) else { return [] }
+        candidates[index].apply(text, confidence: confidence, isFinal: isFinal)
+
+        guard let leader = DictationCandidate.bestIndex(of: candidates) else { return [] }
+        let reading = candidates[leader].text
+        let runnerUp = candidates.indices.filter { $0 != leader }.map { candidates[$0].score }.max() ?? 0
+        let words = reading.final.split(whereSeparator: \.isWhitespace).count
+        // Recognisers rate only fixed words, and each fixes them at its own pace: until every language has
+        // rated some, an unrated one scores zero although it may be the right one.
+        let everyoneRated = candidates.allSatisfy(\.isRated)
+        let clearLead = words >= Self.minimumWords && candidates[leader].score - runnerUp >= Self.margin
+        guard (everyoneRated && (clearLead || words >= Self.decisiveWords)) || words >= Self.walkoverWords else {
+            // Without ratings, the reading with more words is the better guess to show: a recogniser hearing
+            // a language it does not know drops most of them.
+            let shown = everyoneRated ? reading : candidates.max { $0.text.text.count < $1.text.text.count }?.text ?? reading
+            return [.segment(shown.text, isFinal: false)]
+        }
+        chosen = leader
+        return [.locked(leader), .segment(reading.final, isFinal: true), .segment(reading.volatile, isFinal: false)]
+    }
+
+    /// When listening ends before a language was chosen (only short replies), the leading reading is kept.
+    mutating func finish() -> [Output] {
+        guard chosen == nil, let leader = DictationCandidate.bestIndex(of: candidates) else { return [] }
+        chosen = leader
+        return [.segment(candidates[leader].text.text, isFinal: true)]
+    }
+}
+
+/// The recognisers one speaker's audio goes to. The capture queue reads it; the main actor narrows it to one.
+private final class SpeakerRoute: Sendable {
+    private let channels: Mutex<[ChannelTranscriber]>
+
+    init(_ channels: [ChannelTranscriber]) {
+        self.channels = Mutex(channels)
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        for channel in channels.withLock({ $0 }) { channel.append(buffer) }
+    }
+
+    /// Keeps only the recogniser at `index` and returns the others.
+    func keep(_ index: Int) -> [ChannelTranscriber] {
+        channels.withLock { channels in
+            guard channels.indices.contains(index) else { return [] }
+            let dropped = channels.enumerated().filter { $0.offset != index }.map(\.element)
+            channels = [channels[index]]
+            return dropped
+        }
     }
 }
 
@@ -195,6 +319,21 @@ final class ChannelTranscriber: @unchecked Sendable {
         // Per-word confidence lets dictation pick the language the user actually spoke.
         preset.attributeOptions.insert(.transcriptionConfidence)
         return preset
+    }
+
+    /// Resolves every locale this Mac can recognise, one per model, installing models as needed.
+    /// Fails only when none of them is available.
+    static func prepare(locales: [Locale]) async throws -> [Locale] {
+        var resolved: [Locale] = []
+        for locale in locales {
+            guard let supported = try? await prepare(locale: locale),
+                  !resolved.contains(where: { $0.identifier == supported.identifier }) else { continue }
+            resolved.append(supported)
+        }
+        guard !resolved.isEmpty else {
+            throw MeetingError.unsupportedLocale(locales.map(\.identifier).joined(separator: ", "))
+        }
+        return resolved
     }
 
     /// Resolves the locale and installs its on-device model if needed.
@@ -369,7 +508,7 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
     }
 }
 
-private extension CMSampleBuffer {
+extension CMSampleBuffer {
     func pcmBuffer() -> AVAudioPCMBuffer? {
         guard let description = formatDescription else { return nil }
         let format = AVAudioFormat(cmAudioFormatDescription: description)

@@ -103,6 +103,9 @@ for scope in ["project", "target", "widget"]:
             }
             if configuration == "Debug":
                 settings["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] = "DEBUG $(inherited)"
+                # One binary instead of a stub plus SiriPlus.debug.dylib: with hardened runtime, a dylib signed
+                # by the self-signed certificate (no Team ID) fails library validation and the app cannot launch.
+                settings["ENABLE_DEBUG_DYLIB"] = "NO"
         elif scope == "widget":
             settings = {
                 "PRODUCT_NAME": "SiriPlusWidget",
@@ -110,7 +113,7 @@ for scope in ["project", "target", "widget"]:
                 "INFOPLIST_FILE": "SiriPlusWidget/Info.plist",
                 "CODE_SIGN_ENTITLEMENTS": "SiriPlusWidget/SiriPlusWidget.entitlements",
                 "GENERATE_INFOPLIST_FILE": "NO",
-                "MARKETING_VERSION": "0.2.2",
+                "MARKETING_VERSION": "0.3.0",
                 "CURRENT_PROJECT_VERSION": "1",
                 "CODE_SIGN_IDENTITY": "-",
                 "CODE_SIGN_STYLE": "Manual",
@@ -130,7 +133,7 @@ for scope in ["project", "target", "widget"]:
                 "INFOPLIST_FILE": "SiriPlus/Resources/Info.plist",
                 "CODE_SIGN_ENTITLEMENTS": "SiriPlus/Resources/SiriPlus.entitlements",
                 "GENERATE_INFOPLIST_FILE": "NO",
-                "MARKETING_VERSION": "0.2.2",
+                "MARKETING_VERSION": "0.3.0",
                 "CURRENT_PROJECT_VERSION": "1",
                 "CODE_SIGN_IDENTITY": "-",
                 "CODE_SIGN_STYLE": "Manual",

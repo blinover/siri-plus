@@ -22,6 +22,8 @@ final class UpdateModel: ObservableObject {
     /// True while a check the user asked for runs, so the prompt can show it.
     @Published private(set) var isCheckingVisibly = false
     @Published private(set) var progress: UpdateProgress?
+    /// The user closed the prompt; work in progress (a check, an installation) goes on without it.
+    @Published private(set) var isPromptDismissed = false
 
     private let checker: any UpdateChecking
     private let installer: any UpdateInstalling
@@ -68,6 +70,7 @@ final class UpdateModel: ObservableObject {
         state = .checking
         if userInitiated {
             notice = nil
+            isPromptDismissed = false
             isCheckingVisibly = true
         }
         defer { isCheckingVisibly = false }
@@ -82,6 +85,7 @@ final class UpdateModel: ObservableObject {
             state = .available(release)
             // A version the user skipped is offered again only when asked for explicitly.
             if userInitiated || defaults.string(forKey: skippedKey) != release.version {
+                isPromptDismissed = false
                 offer = release
             }
         } catch {
@@ -107,12 +111,20 @@ final class UpdateModel: ObservableObject {
         }
     }
 
+    /// Closes the prompt in any state; an offered version counts as "later".
+    func dismissPrompt() {
+        isPromptDismissed = true
+        offer = nil
+        dismissNotice()
+    }
+
     func dismissNotice() {
         noticeTask?.cancel()
         notice = nil
     }
 
     private func show(_ message: String) {
+        isPromptDismissed = false
         notice = message
         noticeTask?.cancel()
         noticeTask = Task { [weak self] in

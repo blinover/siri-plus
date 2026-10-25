@@ -1,185 +1,151 @@
 # Siri+
 
 [![Support on Boosty](https://img.shields.io/badge/Boosty-support-F15F2C?logo=boosty&logoColor=white)](https://boosty.to/rtm00)
+[![Latest release](https://img.shields.io/github/v/release/rtmo0/siri-plus)](https://github.com/rtmo0/siri-plus/releases/latest)
+![macOS 26+](https://img.shields.io/badge/macOS-26%2B-black?logo=apple)
 
-Персональный помощник для macOS 26+, который живёт в строке меню. Во время созвона в Zoom, Teams, Telegram, браузере или любом другом приложении он слушает разговор, распознаёт речь прямо на Mac и подсказывает по обсуждаемой теме. Вне созвона по ⌃⌥Пробел открывается быстрый вопрос в полупрозрачной панели сбоку экрана, как у Siri.
+A personal assistant for macOS 26 that lives in the menu bar. During a call in Zoom, Teams, Telegram, a browser or any other app, it listens, recognizes speech right on your Mac and suggests what to say about the topic being discussed. Outside calls, ⌃⌥Space opens a Siri-style panel: ask by voice or text, attach a file, get an answer.
 
-Интерфейс на английском и русском: язык берётся из системы. Язык распознавания речи по умолчанию тоже системный, его можно сменить в Настройках. Ответы модели приходят на языке разговора.
+The interface is in English and Russian and follows the system language. Swift 6, SwiftUI, Liquid Glass, no third-party dependencies.
 
-Оформление — Liquid Glass macOS 26: стеклянные боковая панель, тулбар, поле ввода, карточки подсказок и панель в стиле Siri.
+## How it works
 
-Swift 6, SwiftUI, AppKit, ScreenCaptureKit, Speech (`SpeechAnalyzer` + `DictationTranscriber`), App Intents. Внешних зависимостей нет.
+![How Siri+ works: call audio, microphone, voice and files are processed on the Mac; only text goes to Claude or ChatGPT, which return hints, answers and meeting summaries](docs/how-it-works.svg)
 
-## Что где выполняется
+## What it can do
 
-| Локально, на Mac | В облаке (Claude или ChatGPT) |
+| | Feature | Runs |
+| :-: | --- | --- |
+| ✅ | Lives in the menu bar, no Dock icon | Mac |
+| ✅ | Listens to any call: Zoom, Teams, FaceTime, Telegram, Telemost, Slack, Discord, a browser, or all system audio | Mac |
+| ✅ | Keeps “Me” (microphone) and “Them” (call audio) apart in the transcript | Mac |
+| ✅ | On-device speech recognition in English, Russian and other macOS languages, with automatic language choice | Mac |
+| ✅ | Spots questions in the conversation and suggests answers in a side panel | Mac + model |
+| ✅ | Hint panel hidden from screen sharing | Mac |
+| ✅ | Offers to start listening when a call begins and to stop when it ends | Mac |
+| ✅ | Meeting materials (agenda, names, terms) help recognition and hints | Mac + model |
+| ✅ | Meeting history: title, summary, action items with checkboxes, participants, full transcript | Mac + model |
+| ✅ | Ask questions about a past meeting, export it to Markdown | Mac + model |
+| ✅ | Siri-style ask panel on ⌃⌥Space with voice dictation | Mac + model |
+| ✅ | Chat with saved history and search | Mac + model |
+| ✅ | Attach images, PDFs, text and code files | Mac + model |
+| ✅ | Transcribe audio and video files (MP3, M4A, WAV, AIFF, MP4, MOV…) | Mac |
+| ✅ | Claude: browser sign-in through Claude Code, or an API key | model |
+| ✅ | ChatGPT: browser sign-in to your account, or an API key | model |
+| ✅ | Subscription limits: how much is left and when it resets | Mac |
+| ✅ | Desktop widget and a Shortcuts action | Mac |
+| ✅ | Updates itself from GitHub releases | Mac |
+
+## Install
+
+Download `SiriPlus-<version>-arm64.dmg` from [Releases](https://github.com/rtmo0/siri-plus/releases) (Apple silicon, macOS 26 or later).
+
+Siri+ is not signed with an Apple Developer ID, so macOS blocks the downloaded copy. Either:
+
+- open the disk image, right-click `Install Siri+.command` → Open → Open. It copies the app to Applications and removes the quarantine flag;
+- or drag `SiriPlus.app` to Applications and run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/SiriPlus.app
+```
+
+First launch:
+
+1. The ✦ icon appears in the menu bar.
+2. Settings → Model: choose Claude or ChatGPT and sign in.
+3. Meeting → Start. macOS asks for screen and system audio recording and for the microphone.
+
+## Meetings
+
+- **Audio source.** A running call app is picked automatically. You can choose any other running app (for example a browser with Google Meet) or “All system audio”, which works with any call.
+- **Your voice** comes from the microphone as a separate channel. Headphones work best; otherwise the microphone also picks up the other side.
+- **Language.** “System” listens for your system languages and keyboard layouts at once. For each speaker, the language whose recognizer is clearly more confident over the first phrases is kept and the others stop. You can also fix the language in Settings.
+- **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown.
+- **Questions** are spotted locally by question words after a short pause, since on-device Russian recognition adds no punctuation.
+- **History.** After Stop, the meeting is saved on your Mac with a title, summary, action items and participants written by the model. The search covers everything, including the transcript. “Ask about meeting” opens a chat that answers from the transcript.
+
+Tell participants you use an assistant: recording a conversation without consent is illegal in many countries.
+
+## Chat and the ask panel
+
+- **⌃⌥Space** in any app opens a translucent panel that starts listening right away. Speak a command; it is sent when you fall silent for 1.5 seconds. Press again to send at once.
+- The panel sits in the top-right corner with the same margin as widgets. Drag it by any empty area; the place is remembered.
+- Attach files with the paperclip or drag and drop. Images go to the model as images; PDF, text and code are read on the Mac; audio and video are transcribed on the Mac and only the transcript is sent. Telegram voice notes (OGG/Opus) need converting first.
+- The input grows up to 13 lines, then scrolls. Return sends, Shift-Return adds a line.
+
+## Models and sign-in
+
+| Provider | Browser sign-in (default) | API key |
+| --- | --- | --- |
+| **Claude** | Through the official [Claude Code](https://code.claude.com/docs/en/setup): “Sign in to Claude” opens Terminal with `claude auth login`. Requests run through `claude -p` in safe mode (no tools, no saved sessions) and use your Pro/Max limits. | A key from [Claude Console](https://platform.claude.com/settings/keys); direct streaming requests to `api.anthropic.com`. |
+| **ChatGPT** | OAuth sign-in to your ChatGPT account (PKCE, loopback on port 1455/1457), as in Codex. Tokens live in the Keychain and refresh automatically. | An OpenAI API key, Responses API. |
+
+Claude models: Opus 5.5, Sonnet 5.5 or Haiku 5.5. Haiku is the fastest for meeting hints (the answer starts in about two seconds).
+
+With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint. API keys have no subscription limits.
+
+Subscription sign-in is for personal use on your own Mac.
+
+## Privacy
+
+| On your Mac | In the cloud (Claude or ChatGPT) |
 | --- | --- |
-| Захват звука созвона и микрофона (ScreenCaptureKit) | Текст подсказок на созвоне |
-| Распознавание речи (русский, английский и другие языки macOS) | Ответы в чате и в быстрой панели |
-| Поиск вопросов в речи собеседника | Разбор снимка экрана, если он приложен к сообщению |
-| Токены входа и ключи API (связка ключей) | |
-| История созвонов: расшифровка, название, выжимка, участники — файл `~/Library/Application Support/SiriPlus/meetings.json` | Название, участники и краткая выжимка созвона после «Стоп» |
-| История чата и заметки — только в памяти | |
+| Capturing call and microphone audio | Meeting hints |
+| Speech recognition | Answers in chat and the ask panel |
+| Spotting questions | Reading an attached screenshot or image |
+| Sign-in tokens and API keys (Keychain) | Meeting title, participants and summary after Stop |
+| Chats and meeting history (`~/Library/Application Support/SiriPlus/`) | |
 
-В облако уходят только твои сообщения, снимок экрана, сделанный по кнопке, и последний фрагмент расшифровки (до ~6000 символов) вместе с материалами к встрече — в тот момент, когда нужна подсказка. После остановки созвона расшифровка (до ~100 000 символов) и материалы отправляются ещё раз, чтобы получить название и выжимку. Звук никуда не отправляется.
+Audio is never sent anywhere. The model receives your messages, attachments, and a recent piece of the transcript (up to about 6,000 characters) with the meeting materials when a hint is needed. After Stop, the transcript is sent once more to write the summary.
 
-## Запуск
+## Updates
 
-Нужен Xcode 26+ и macOS 26+.
+Siri+ checks the [latest release](https://github.com/rtmo0/siri-plus/releases/latest) 10 seconds after launch and every 12 hours, or on demand from the menu. When a new version is out, it offers to install it: downloads the DMG with a progress bar, verifies its SHA-256, checks the version inside, replaces the app and relaunches. The app needs to live in a folder you can write to, such as Applications.
+
+## Build from source
+
+Requires Xcode 26 and macOS 26.
 
 ```sh
 bash scripts/build.sh
 open build/Build/Products/Debug/SiriPlus.app
 ```
 
-Или откройте `SiriPlus.xcodeproj`, схема **SiriPlus**, устройство **My Mac**, Run. Подпись — локальная (**Sign to Run Locally**), членство Apple Developer не нужно.
+macOS remembers microphone and screen recording permissions by the app's signature. An ad-hoc signature changes with every build, so permissions would reset each time. Create a stable self-signed certificate once and every build is signed with it:
 
-Первый запуск:
+```sh
+bash scripts/make-signing-identity.sh
+```
 
-1. Значок ✦ появится в строке меню, в Доке приложения нет.
-2. Настройки → Модель → выбрать Claude или ChatGPT и нажать «Войти» (см. ниже).
-3. Созвон → «Начать». macOS запросит доступ к записи экрана и системного звука и к микрофону. После выдачи доступа к записи экрана приложение может потребовать перезапуска.
+For GitHub releases, add the repository secrets `SIRIPLUS_SIGNING_P12` (the base64 printed by the script) and `SIRIPLUS_SIGNING_P12_PASSWORD`.
 
-`scripts/build.sh` подписывает сборку первым найденным сертификатом **Apple Development** из связки ключей (другой можно задать через `SIGN_IDENTITY="…"`). С ним macOS узнаёт приложение после пересборки, и разрешения не слетают. Без сертификата сборка подписывается локально (ad-hoc), и тогда для macOS каждая пересборка — новое приложение: разрешения и доступ к связке ключей спрашиваются заново, а старый включённый переключатель в Настройках не действует (удалите SiriPlus из списка кнопкой «−» и выдайте доступ снова). Запускайте его из одного места, например скопируйте в `~/Applications`.
+Tests and project generation:
 
-## Голос и панель
+```sh
+swift test                               # shared logic, no screen, microphone or network access
+python3 scripts/generate-project.py      # after adding Swift files
+```
 
-- **⌃⌥Пробел** в любом приложении открывает полупрозрачную панель, которая сразу слушает, как Siri. Говорите команду: текст появляется по ходу речи, а когда вы замолкаете на полторы секунды, команда отправляется сама. Повторное нажатие отправляет сразу. Начинать с диктовки можно отключить в Настройках → «Диалог».
-- Кнопка микрофона есть и в панели, и в поле ввода чата. Щелчок по тексту во время диктовки останавливает её и оставляет слова для правки.
-- Речь распознаётся на этом Mac тем же движком, что и на созвонах; язык — системный или выбранный в настройках.
-- Панель стоит в правом верхнем углу экрана с курсором, с отступом как у уведомлений. Её можно перетащить за верхнюю строку — место запомнится; двойной щелчок по строке возвращает её в угол.
+Releases: pushing a tag like `v0.3.0` builds the DMG on the `macos-26` runner and publishes a GitHub Release. `bash scripts/release.sh 0.3.0` builds the same DMG locally into `dist/`.
 
-## Виджет
-
-В галерее виджетов macOS (правый щелчок по рабочему столу → «Изменить виджеты», или Центр уведомлений) есть виджет **Siri+** двух размеров:
-
-- маленький — открывает панель, которая сразу слушает;
-- средний — кнопки «Спросить» и «Начать созвон».
-
-Виджет открывает приложение по ссылкам `siriplus://ask` и `siriplus://meeting`; их можно использовать и в «Командах».
-
-## Режим созвона
-
-- **Звук собеседника.** По умолчанию выбирается запущенное приложение для созвонов (Zoom, Teams, FaceTime, Webex, Skype, Телемост, Telegram, Slack, Discord, WhatsApp, VK). Можно выбрать любое другое запущенное приложение, например браузер с Google Meet, или «Весь звук системы» — это работает с любым созвоном.
-- **Автостарт.** Когда приложение для созвонов (список выше) пишет с микрофона дольше 10 секунд, сверху экрана появляется панелька «Звонок в Zoom. Начать созвон в Siri+?». «Начать» выбирает это приложение источником звука и запускает созвон, «Не сейчас» — не спрашивать до следующего звонка. Если во время созвона приложение звонка 30 секунд не пользуется микрофоном, панелька предложит остановить созвон и сохранить его в «Историю». Какие приложения пишут с микрофона, видно из списка аудиопроцессов CoreAudio — без доступа к самому звуку и без отдельного разрешения. Браузеры не отслеживаются: они берут микрофон и для других сайтов. Выключается в Настройках → Созвон.
-- **Мой голос** берётся с микрофона отдельным каналом, поэтому в расшифровке видно, кто говорит: «Я» или «Собеседник». Лучше использовать наушники, иначе микрофон повторяет собеседника. Микрофон можно отключить в Настройках.
-- **Когда появляются подсказки** (Настройки → Созвон):
-  - «На вопросы и по теме» — после вопроса собеседника и примерно раз в 45 секунд, если разговор продвинулся на ~70 слов;
-  - «Только на вопросы»;
-  - «Только по запросу» — кнопка «Подсказать» или ⌃⌥Пробел.
-- **Как ищутся вопросы.** Локальное распознавание русского не ставит знаков препинания, поэтому вопросы ищутся по словам («почему», «сколько», «расскажите», частица «ли», вопросительное слово в начале фразы) после паузы ~1,2 с. Окончательно решает модель: если подсказка не нужна, она отвечает «—», и такая подсказка не показывается.
-- **Материалы к встрече** (повестка, факты, цифры) попадают в системную подсказку модели и кэшируются на время встречи. Слова с заглавной буквой и с цифрами (имена, названия продуктов, сокращения вроде «k8s», «Q4») при старте созвона передаются распознавателю как подсказка (`AnalysisContext.contextualStrings`), чтобы он реже их коверкал. Материалы, дописанные после «Начать», распознаватель уже не увидит.
-- **Панель подсказок** — полупрозрачная, сбоку экрана, поверх всех окон, без фокуса. Она скрыта от демонстрации экрана (`sharingType = .none`), но на новых версиях macOS это стоит проверить на своём созвоне.
-- Расшифровку можно скопировать. После остановки она остаётся до «Очистить» или до закрытия приложения.
-
-## История созвонов
-
-После «Стоп» созвон с расшифровкой сохраняется на Mac и появляется во вкладке «История»: дата, время и длительность, название, краткая выжимка, задачи («кто, что, к какому сроку» с чекбоксами), участники и вся расшифровка. Название, участников, выжимку и задачи пишет выбранная модель одним запросом; «Написать выжимку заново» заменяет задачи вместе с отметками. Название и участников можно исправить; если очистить название, его снова предложит модель при «Написать выжимку заново». Участники берутся из разговора (кто как представился, к кому обращались): по голосу приложение различает только «Я» и «Собеседник». Созвон без речи не сохраняется. Удалить созвон — правый клик в списке.
-
-Поиск в «Истории» ищет по названию, выжимке, задачам, участникам и расшифровке. Кнопка «Спросить про созвон» открывает новый разговор в Ассистенте, где модель отвечает по расшифровке и итогам этого созвона («Что решили про бюджет?», «Составь письмо по итогам»); расшифровка уходит в облако с каждым вопросом. Остальные кнопки в тулбаре копируют выжимку с задачами в Markdown или сохраняют весь созвон с расшифровкой в файл `.md`. В Настройках → Созвон можно выбрать, сколько хранить созвоны (всегда, 7, 30, 90 или 365 дней): более старые удаляются при запуске, после нового созвона и при смене срока.
-
-Предупреждайте участников, что используете помощника: запись разговора без согласия во многих странах незаконна.
-
-## Модели и вход
-
-| Провайдер | Вход через браузер (по умолчанию) | Ключ API |
-| --- | --- | --- |
-| **Claude** | Через официальный [Claude Code](https://code.claude.com/docs/en/setup): «Войти в Claude» открывает Терминал с `claude auth login`, вход завершается в браузере. Запросы идут через `claude -p` в безопасном режиме (без инструментов, без сохранения сессий) и расходуют лимиты подписки Pro/Max. Учётные данные остаются у Claude Code. | Ключ из [Claude Console](https://platform.claude.com/settings/keys), прямые запросы к `api.anthropic.com` с потоковой передачей, кэшированием промпта и серверным fallback для Opus/Sonnet. |
-| **ChatGPT** | OAuth-вход в аккаунт ChatGPT (PKCE и локальный адрес возврата на порту 1455/1457), как в Codex. Токены хранятся в связке ключей и обновляются автоматически. Список моделей берётся из аккаунта. | Ключ OpenAI API, Responses API (`gpt-6-astra`, `gpt-6.1-sol`, `gpt-6-luna`). |
-
-Модель Claude выбирается одна для обоих способов входа: Opus 5.5, Sonnet 5.5 или Haiku 5.5. Для подсказок на созвоне быстрее всего Haiku: ответ начинается примерно через 2 секунды. Подсказки запрашиваются с низким уровнем рассуждений ради скорости.
-
-Вход через подписку — для личного использования на своём Mac. Сторонним людям раздавать приложение со входом через чужую подписку нельзя: у Anthropic и OpenAI для этого есть свои правила.
-
-## Структура
+### Project layout
 
 ```text
 SiriPlus/
-  App/          SwiftUI App, AppModel (чат, ключ, снимки), MeetingModel (созвон и подсказки),
-                MeetingHistory (история созвонов и выжимки)
-  Features/     Окна: чат, созвон, история, настройки, панель в стиле Siri
-  Models/       Сообщения, настройки, расшифровка и детектор вопросов
-  Services/     Провайдеры (Claude API, Claude Code, OpenAI API, аккаунт ChatGPT), захват звука +
-                распознавание, Keychain, снимки, горячая клавиша
-  Intents/      Действие для Siri / Команд
-  Resources/    Info.plist, entitlements, каталоги строк (en, ru)
-Tests/          Модели, детектор вопросов, протоколы провайдеров, логика подсказок
+  App/          App, AppModel (chat, attachments, dictation), MeetingModel (meeting and hints),
+                histories, updates, usage limits
+  Features/     Windows: chat, meeting, settings, ask panel, update prompt
+  Models/       Messages, settings, transcript and question detector
+  Services/     Model providers, audio capture and speech recognition, media transcription,
+                Keychain, screenshots, hotkey, updater
+  Intents/      Siri and Shortcuts action
+  Resources/    Info.plist, entitlements, string catalogs (en, ru), icons
+SiriPlusWidget/ Desktop widget
+Tests/          Unit tests
 ```
 
-`LiveMeetingService` реализует протокол `MeetingService`: один поток ScreenCaptureKit отдаёт звук приложения и микрофона, каждый канал идёт в свой `SpeechAnalyzer`. `AssistantPrompts` собирает промпты, общие для всех провайдеров, а `CloudAssistantService` отправляет их в выбранный `ModelBackend`. Нового провайдера можно добавить, реализовав `ModelBackend`.
+UI strings are written in English in code; the Russian translation lives in `Resources/Localizable.xcstrings`.
 
-Строки интерфейса пишутся в коде на английском, русский перевод лежит в `Resources/Localizable.xcstrings` (тексты разрешений — в `InfoPlist.xcstrings`, фраза Siri — в `AppShortcuts.xcstrings`). Новую строку добавьте в каталог в Xcode или вручную.
+## Support
 
-## Установка из релиза
-
-Готовые сборки лежат в [Releases](https://github.com/rtmo0/siri-plus/releases): `SiriPlus-<версия>-arm64.dmg` для Apple silicon и macOS 26+.
-
-У Siri+ нет подписи Apple Developer ID, поэтому macOS блокирует скачанную копию. Есть два способа установить:
-
-- откройте образ, щёлкните правой кнопкой по `Install Siri+.command` → «Открыть» → «Открыть»: скрипт скопирует приложение в «Программы» и снимет карантин;
-- или перетащите `SiriPlus.app` в «Программы» и выполните в Терминале:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/SiriPlus.app
-```
-
-## Обновления
-
-Siri+ сама проверяет [последний релиз](https://github.com/rtmo0/siri-plus/releases/latest) через 10 секунд после запуска и затем раз в 12 часов. Проверить сразу можно из строки меню («Проверить обновления…») или в Настройках → «Обновления» → «Проверить сейчас». Автопроверку можно выключить там же.
-
-Когда выходит новая версия, сверху появляется плашка «Установить / Позже / Пропустить эту версию». При установке Siri+:
-
-1. скачивает DMG и сверяет его с файлом `.sha256` из релиза;
-2. монтирует образ и проверяет, что внутри Siri+ с нужной версией;
-3. после выхода заменяет приложение на новое, снимает карантин и запускается снова.
-
-Для этого приложение должно лежать в папке, куда у пользователя есть право записи, например в «Программах».
-
-## Сборка релиза и CI
-
-`.github/workflows/build.yml` на каждый push и pull request запускает тесты и сборку на раннере `macos-26`. Тег вида `v0.2.0` дополнительно собирает DMG и публикует GitHub Release с инструкцией по `xattr`; версия приложения берётся из тега.
-
-```sh
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-Локально тот же DMG собирает `bash scripts/release.sh 0.2.0`; результат появляется в `dist/`.
-
-### Постоянная подпись
-
-macOS хранит разрешения на микрофон и запись экрана за подписью приложения. Локальная (ad-hoc) подпись меняется с каждой сборкой, поэтому разрешения слетали бы после каждой пересборки и обновления. Чтобы этого не было, сборки подписываются самоподписанным сертификатом «SiriPlus Local Signing» из отдельной связки ключей:
-
-```sh
-bash scripts/make-signing-identity.sh   # один раз: создаёт сертификат и печатает его в base64
-```
-
-`build.sh` и `release.sh` подписывают им приложение и виджет через `scripts/sign.sh`. Для релизов на GitHub добавьте секреты репозитория `SIRIPLUS_SIGNING_P12` (base64 из скрипта) и `SIRIPLUS_SIGNING_P12_PASSWORD` (`siriplus`). Без них релиз подписывается ad-hoc, и после обновления разрешения придётся выдать заново.
-
-Иконка лежит в `Resources/Assets.xcassets/AppIcon.appiconset`: стандартная форма macOS, переливающийся шар Siri с искрами и «+».
-
-## Поддержать проект
-
-Siri+ бесплатна и с открытым кодом. Если она экономит вам время на созвонах, поддержать разработку можно на [Boosty](https://boosty.to/rtm00). Сообщения об ошибках и pull request'ы тоже очень помогают.
-
-## Проверки
-
-```sh
-swift test
-bash scripts/build.sh
-```
-
-`Package.swift` собирает общую логику для тестов без GUI. Тесты не запрашивают доступ к экрану, микрофону и сети.
-
-Если добавляете Swift-файлы, пересоздайте проект: `python3 scripts/generate-project.py`. Настройки сборки (минимальная версия macOS, entitlements) задаются в этом скрипте.
-
-Вручную проверить:
-- вход в Claude (Терминал + браузер) и в ChatGPT (браузер), выбор модели;
-- созвон в Zoom/Teams: двигаются ли индикаторы «Собеседник» и «Я», появляется ли расшифровка, приходит ли подсказка на вопрос;
-- интерфейс на английском и русском (сменить язык системы или запустить с `-AppleLanguages "(en)"`);
-- выбор «Весь звук системы»;
-- отказ в доступе к микрофону;
-- ⌃⌥Пробел вне созвона и во время него;
-- звонок в Zoom или Telegram дольше 10 секунд: появляется предложение начать созвон, а после конца звонка — остановить;
-- видна ли панель при демонстрации экрана;
-- действие Siri+ в «Командах»;
-- после «Стоп» созвон появляется в «Истории» с названием и выжимкой, название редактируется и сохраняется после перезапуска.
+Siri+ is free and open source. If it saves you time on calls, you can support development on [Boosty](https://boosty.to/rtm00). Bug reports and pull requests help a lot too.

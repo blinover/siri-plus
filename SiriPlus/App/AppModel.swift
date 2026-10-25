@@ -1,28 +1,26 @@
 import AppKit
 import Combine
 
+/// Chat and Meeting each keep their own history inside the tab.
 enum WorkspaceTab: String, CaseIterable, Identifiable {
-    case assistant
+    case chat
     case meeting
-    case history
     case settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .assistant: String(localized: "Assistant")
+        case .chat: String(localized: "Chat")
         case .meeting: String(localized: "Meeting")
-        case .history: String(localized: "History")
         case .settings: String(localized: "Settings")
         }
     }
 
     var symbol: String {
         switch self {
-        case .assistant: "sparkles"
+        case .chat: "sparkles"
         case .meeting: "waveform"
-        case .history: "clock.arrow.circlepath"
         case .settings: "slider.horizontal.3"
         }
     }
@@ -52,16 +50,22 @@ struct Credentials {
     var openAIKey: any SecretStoring = KeychainStore(account: "openai-api-key")
     var chatGPT = ChatGPTAccount()
     var claudeCodeStatus: @Sendable () async -> ClaudeCodeStatus = { await ClaudeCodeBackend.status() }
+    var claudeUsage: @Sendable () async throws -> AccountUsage = { try await ClaudeCodeBackend.usage() }
 }
 
 @MainActor
 final class AppModel: ObservableObject {
-    @Published var selectedTab: WorkspaceTab? = .assistant
+    @Published var selectedTab: WorkspaceTab? = .chat
+    /// The saved chat on screen; nil until the first message of a new chat.
+    @Published private(set) var currentChatID: UUID?
     @Published var draft = ""
     @Published var preferences: AssistantPreferences {
         didSet {
             preferencesStore.save(preferences)
-            if preferences.historyRetentionDays != oldValue.historyRetentionDays { history.removeExpired() }
+            if preferences.historyRetentionDays != oldValue.historyRetentionDays {
+                history.removeExpired()
+                chats.removeExpired()
+            }
         }
     }
     @Published private(set) var messages: [ChatMessage] = []
@@ -74,16 +78,20 @@ final class AppModel: ObservableObject {
     @Published private(set) var snapshot: ScreenSnapshot?
     /// Files waiting to go with the next message, from the panel or the chat.
     @Published private(set) var pendingAttachments: [ChatAttachment] = []
+    /// Audio and video files whose speech is still being recognized; sending waits for them.
+    @Published private(set) var processingAttachments: [String] = []
     @Published private(set) var accounts = ProviderAccounts()
     @Published private(set) var isSigningIn = false
     @Published var errorMessage: String?
 
     let meeting: MeetingModel
     let history: MeetingHistory
+    let chats: ChatHistory
     let callMonitor: CallMonitor
     let updates: UpdateModel
     let voice: VoiceInput
     let permissions = PermissionCenter()
+    let usage: UsageModel
     /// Shows the floating hint panel; set by the app scene.
     var showHintPanel: (() -> Void)?
 
@@ -103,6 +111,7 @@ final class AppModel: ObservableObject {
         preferencesStore: PreferencesStore = PreferencesStore(),
         credentials: Credentials = Credentials(),
         historyStore: MeetingHistoryStore = MeetingHistoryStore(),
+        chatStore: ChatHistoryStore = ChatHistoryStore(),
         microphoneUsage: any MicrophoneUsageSource = CoreAudioMicrophoneUsage(),
         updateChecker: any UpdateChecking = GitHubUpdateChecker(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
@@ -124,15 +133,18 @@ final class AppModel: ObservableObject {
             currentPreferences()
         }
         history = MeetingHistory(store: historyStore, summaries: assistant) { currentPreferences() }
+        chats = ChatHistory(store: chatStore) { currentPreferences() }
         callMonitor = CallMonitor(meeting: meeting, usage: microphoneUsage) { currentPreferences().offersMeetingStart }
         updates = UpdateModel(checker: updateChecker) { currentPreferences().checksForUpdates }
         voice = VoiceInput()
+        let chatGPTAccount = credentials.chatGPT
+        usage = UsageModel(fetchClaude: credentials.claudeUsage, fetchChatGPT: { try await chatGPTAccount.usage() })
         currentPreferences = { [unowned self] in self.preferences }
         accounts.hasClaudeKey = (try? credentials.claudeKey.read())?.isEmpty == false
         accounts.hasOpenAIKey = (try? credentials.openAIKey.read())?.isEmpty == false
         meeting.onFinish = { [history] in history.add($0) }
         // Views observing the app model also follow meeting and history state (menu bar icon, sidebar badge, errors).
-        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange)
+        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange, chats.objectWillChange, usage.objectWillChange)
             .sink { [weak self] in self?.objectWillChange.send() }
     }
 
@@ -141,12 +153,13 @@ final class AppModel: ObservableObject {
     @discardableResult
     func send(_ text: String) -> Task<Void, Never>? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !isReplying else { return nil }
+        guard !trimmed.isEmpty, !isReplying, processingAttachments.isEmpty else { return nil }
 
         errorMessage = nil
         messages.append(ChatMessage(role: .user, text: trimmed, imageJPEG: snapshot?.jpegData, attachments: pendingAttachments))
         clearSnapshot()
         pendingAttachments = []
+        saveChat()
         isReplying = true
         partialReply = ""
         let requestID = UUID()
@@ -179,15 +192,34 @@ final class AppModel: ObservableObject {
     func newConversation() {
         stopReply()
         messages = []
+        currentChatID = nil
         chatMeeting = nil
         draft = ""
         pendingAttachments = []
         clearSnapshot()
         errorMessage = nil
-        selectedTab = .assistant
+        selectedTab = .chat
     }
 
-    /// Starts a new conversation about a finished meeting.
+    /// Shows a saved chat; a chat about a meeting keeps answering from that meeting.
+    func openChat(_ id: UUID) {
+        guard id != currentChatID, let conversation = chats.conversation(id) else { return }
+        stopReply()
+        messages = conversation.messages
+        currentChatID = id
+        chatMeeting = conversation.meetingID.flatMap { meetingID in history.records.first { $0.id == meetingID } }
+        draft = ""
+        pendingAttachments = []
+        clearSnapshot()
+        errorMessage = nil
+        selectedTab = .chat
+    }
+
+    func deleteChat(_ id: UUID) {
+        if id == currentChatID { newConversation() }
+        chats.delete(id)
+    }
+
     /// Starts or stops a spoken command. The text is sent when the user falls silent or stops it.
     func toggleDictation() async {
         if voice.isListening {
@@ -195,7 +227,7 @@ final class AppModel: ObservableObject {
             return
         }
         guard !isReplying else { return }
-        await voice.start(locales: VoiceInput.locales(for: preferences)) { [weak self] text in
+        await voice.start(locales: preferences.speechLocales) { [weak self] text in
             self?.draft = ""
             self?.send(text)
         }
@@ -211,6 +243,7 @@ final class AppModel: ObservableObject {
         if !text.isEmpty { draft = text }
     }
 
+    /// Starts a new conversation about a finished meeting.
     func askAbout(_ meeting: MeetingRecord) {
         newConversation()
         chatMeeting = meeting
@@ -236,9 +269,14 @@ final class AppModel: ObservableObject {
     }
 
     /// Reads the files on this Mac and keeps them for the next message; unsupported files are reported.
+    /// The speech in audio and video files is recognized on this Mac and attached as its transcript.
     func attach(_ urls: [URL]) {
         var failures: [String] = []
         for url in urls {
+            if MediaTranscriber.isMedia(url) {
+                transcribe(url)
+                continue
+            }
             do {
                 pendingAttachments.append(try ChatAttachment.load(from: url))
             } catch {
@@ -246,6 +284,22 @@ final class AppModel: ObservableObject {
             }
         }
         errorMessage = failures.isEmpty ? nil : failures.joined(separator: "\n")
+    }
+
+    private func transcribe(_ url: URL) {
+        let name = url.lastPathComponent
+        processingAttachments.append(name)
+        let locales = preferences.speechLocales
+        Task {
+            do {
+                let result = try await MediaTranscriber.transcribe(url, locales: locales)
+                let header = String(localized: "Transcript of the speech in this file, recognized automatically (\(result.locale.identifier)):")
+                pendingAttachments.append(ChatAttachment(name: name, content: .text("\(header)\n\(result.text)")))
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            if let index = processingAttachments.firstIndex(of: name) { processingAttachments.remove(at: index) }
+        }
     }
 
     func removeAttachment(_ id: UUID) {
@@ -267,6 +321,12 @@ final class AppModel: ObservableObject {
         if accounts.chatGPTEmail != nil, accounts.chatGPTModels.isEmpty {
             accounts.chatGPTModels = (try? await credentials.chatGPT.models()) ?? []
         }
+        await refreshUsage()
+    }
+
+    /// Re-reads how much of each subscription is left.
+    func refreshUsage() async {
+        await usage.refresh(claude: accounts.claudeCode.signedIn, chatGPT: accounts.chatGPTEmail != nil)
     }
 
     func saveAPIKey(_ key: String, for provider: AIProvider) {
@@ -330,6 +390,17 @@ final class AppModel: ObservableObject {
         provider == .claude ? credentials.claudeKey : credentials.openAIKey
     }
 
+    /// Saves the chat on screen, creating it on its first message.
+    private func saveChat() {
+        guard !messages.isEmpty else { return }
+        let id = currentChatID ?? UUID()
+        var conversation = chats.conversation(id) ?? ChatConversation(id: id)
+        conversation.messages = messages
+        conversation.meetingID = chatMeeting?.id
+        chats.upsert(conversation)
+        currentChatID = id
+    }
+
     private func setHasKey(_ value: Bool, for provider: AIProvider) {
         if provider == .claude { accounts.hasClaudeKey = value } else { accounts.hasOpenAIKey = value }
     }
@@ -339,6 +410,8 @@ final class AppModel: ObservableObject {
         let text = partialReply.trimmingCharacters(in: .whitespacesAndNewlines)
         if activeReplyID != nil, !text.isEmpty {
             messages.append(ChatMessage(role: .assistant, text: text))
+            saveChat()
+            usage.refreshSoon(claude: accounts.claudeCode.signedIn, chatGPT: accounts.chatGPTEmail != nil)
         }
         partialReply = ""
         isReplying = false

@@ -124,6 +124,18 @@ actor ChatGPTAccount {
         _ = try await refreshed(try tokens())
     }
 
+    /// Subscription limits of the account: the 5-hour and weekly windows and any extra ones.
+    func usage() async throws -> AccountUsage {
+        let client = try await client()
+        var request = URLRequest(url: URL(string: "https://chatgpt.com/backend-api/wham/usage")!)
+        for (name, value) in client.headers { request.setValue(value, forHTTPHeaderField: name) }
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw OpenAIError.failed(String(localized: "Could not read the ChatGPT usage limits."))
+        }
+        return try UsageParser.chatGPT(data)
+    }
+
     /// Models the account may use, as listed by the backend.
     func models() async throws -> [OpenAIModelOption] {
         if let cachedModels { return cachedModels }

@@ -61,6 +61,18 @@ struct UpdateTests {
         #expect(updates.offer?.version == "0.3.0")
     }
 
+    @Test @MainActor func closingThePromptHidesItUntilTheNextCheck() async {
+        let updates = makeModel(release: release("0.3.0"))
+        await updates.check(userInitiated: false)
+        #expect(updates.offer != nil)
+        updates.dismissPrompt()
+        #expect(updates.offer == nil)
+        #expect(updates.isPromptDismissed)
+        await updates.check(userInitiated: true)
+        #expect(!updates.isPromptDismissed)
+        #expect(updates.offer?.version == "0.3.0")
+    }
+
     @Test func progressFractionNeedsAKnownSize() {
         #expect(UpdateProgress.downloading(received: 50, total: 200).fraction == 0.25)
         #expect(UpdateProgress.downloading(received: 50, total: nil).fraction == nil)

@@ -4,8 +4,30 @@ struct ChatView: View {
     @ObservedObject var model: AppModel
     @FocusState private var isComposerFocused: Bool
     @State private var isDropTargeted = false
+    @State private var query = ""
 
     var body: some View {
+        HStack(spacing: 0) {
+            ChatList(model: model, chats: model.chats, query: query)
+                .frame(minWidth: 170, idealWidth: 210, maxWidth: 260, maxHeight: .infinity)
+            Divider()
+            conversation
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationTitle("Chat")
+        .searchable(text: $query, placement: .toolbar, prompt: Text("Search chats"))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("New Chat", systemImage: "square.and.pencil") { model.newConversation() }
+                    // The app has no main menu (menu bar only), so the shortcut lives on the button.
+                    .keyboardShortcut("n", modifiers: .command)
+                    .help("New Chat (⌘N)")
+            }
+        }
+        .onAppear { isComposerFocused = true }
+    }
+
+    private var conversation: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 if model.messages.isEmpty {
@@ -49,12 +71,13 @@ struct ChatView: View {
                     if let snapshot = model.snapshot {
                         snapshotCard(snapshot)
                     }
-                    if !model.pendingAttachments.isEmpty {
+                    if !model.pendingAttachments.isEmpty || !model.processingAttachments.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 6) {
                                 ForEach(model.pendingAttachments) { attachment in
                                     AttachmentChip(attachment: attachment) { model.removeAttachment(attachment.id) }
                                 }
+                                ForEach(model.processingAttachments, id: \.self) { ProcessingChip(name: $0) }
                             }
                         }
                     }
@@ -77,16 +100,6 @@ struct ChatView: View {
                     .allowsHitTesting(false)
             }
         }
-        .navigationTitle("Assistant")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
-                    // The app has no main menu (menu bar only), so the shortcut lives on the button.
-                    .keyboardShortcut("n", modifiers: .command)
-                    .help("New Conversation (⌘N)")
-            }
-        }
-        .onAppear { isComposerFocused = true }
     }
 
     // MARK: Cards above the composer
@@ -104,12 +117,12 @@ struct ChatView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 4)
-            Button("New Conversation", systemImage: "xmark") { model.newConversation() }
+            Button("New Chat", systemImage: "xmark") { model.newConversation() }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
                 .controlSize(.small)
-                .help("New Conversation (⌘N)")
+                .help("New Chat (⌘N)")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -229,13 +242,10 @@ struct ChatView: View {
                 // Clicking the text stops listening and leaves the words to edit.
                 .onTapGesture { Task { await model.keepDictationAsDraft() } }
             } else {
-                TextField("Type a request…", text: $model.draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...6)
+                GrowingTextEditor(text: $model.draft, placeholder: "Type a request…", onSubmit: send)
                     .focused($isComposerFocused)
-                    .padding(.vertical, 5)
+                    .padding(.vertical, 3)
                     .accessibilityLabel("Request text")
-                    .onSubmit(send)
             }
 
             Button {
@@ -263,7 +273,7 @@ struct ChatView: View {
                     .buttonStyle(.glassProminent)
                     .buttonBorderShape(.circle)
                     .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty)
+                    .disabled((model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.pendingAttachments.isEmpty) || !model.processingAttachments.isEmpty)
                     .help("Send (Return)")
             }
         }
@@ -283,7 +293,7 @@ struct ChatView: View {
         let picker = NSOpenPanel()
         picker.allowsMultipleSelection = true
         picker.canChooseDirectories = false
-        picker.message = String(localized: "Choose images, PDFs or text files for Siri+ to analyze.")
+        picker.message = String(localized: "Choose images, PDFs, text, audio or video files for Siri+ to analyze.")
         if picker.runModal() == .OK { model.attach(picker.urls) }
     }
 }
@@ -328,6 +338,51 @@ private struct MessageRow: View {
                     .textSelection(.enabled)
                     .lineSpacing(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+/// Saved chats, newest first; choosing one continues it.
+private struct ChatList: View {
+    @ObservedObject var model: AppModel
+    @ObservedObject var chats: ChatHistory
+    let query: String
+
+    private var visible: [ChatConversation] { chats.conversations.filter { $0.matches(query) } }
+
+    var body: some View {
+        List(selection: Binding(get: { model.currentChatID }, set: { if let id = $0 { model.openChat(id) } })) {
+            ForEach(visible) { conversation in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(conversation.title)
+                        .font(.callout)
+                        .lineLimit(2)
+                    HStack(spacing: 4) {
+                        if conversation.meetingID != nil {
+                            Image(systemName: "waveform")
+                        }
+                        Text(conversation.updatedAt, format: .relative(presentation: .named))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 2)
+                .tag(conversation.id)
+                .contextMenu {
+                    Button("Delete", systemImage: "trash", role: .destructive) { model.deleteChat(conversation.id) }
+                }
+            }
+        }
+        .overlay {
+            if chats.conversations.isEmpty {
+                ContentUnavailableView {
+                    Label("No chats yet", systemImage: "bubble.left.and.bubble.right")
+                } description: {
+                    Text("Your chats are saved on this Mac.")
+                }
+            } else if visible.isEmpty {
+                ContentUnavailableView.search(text: query)
             }
         }
     }

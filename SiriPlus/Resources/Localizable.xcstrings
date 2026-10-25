@@ -1,12 +1,12 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "%@ cannot be attached: only images, PDFs and text files are supported.": {
+    "%@ cannot be attached: images, PDFs, text, audio and video files are supported.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ нельзя приложить: поддерживаются только изображения, PDF и текстовые файлы."
+            "value": "%@ нельзя приложить: поддерживаются изображения, PDF, текстовые, аудио- и видеофайлы."
           }
         }
       }
@@ -31,6 +31,16 @@
         }
       }
     },
+    "%@ has no sound to transcribe.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В %@ нет звука для расшифровки."
+          }
+        }
+      }
+    },
     "%@ has no text to analyze.": {
       "localizations": {
         "ru": {
@@ -47,6 +57,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ не запущен. Начните созвон или выберите «Весь звук системы»."
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@: %lld%% left": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: осталось %lld%%"
           }
         }
       }
@@ -81,6 +111,46 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld hours": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ч"
+          }
+        }
+      }
+    },
+    "%lld%% left": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Осталось %lld%%"
+          }
+        }
+      }
+    },
+    "5 hours": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 часов"
+          }
+        }
+      }
+    },
+    "5h": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 ч"
           }
         }
       }
@@ -255,16 +325,6 @@
         }
       }
     },
-    "Assistant": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Помощник"
-          }
-        }
-      }
-    },
     "Attach Files": {
       "localizations": {
         "ru": {
@@ -315,6 +375,16 @@
         }
       }
     },
+    "Chat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чат"
+          }
+        }
+      }
+    },
     "ChatGPT account": {
       "localizations": {
         "ru": {
@@ -361,6 +431,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Время ожидания входа в ChatGPT истекло."
+          }
+        }
+      }
+    },
+    "Chats and meetings are saved on this Mac for the period chosen under Meeting.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чаты и созвоны хранятся на этом Mac в течение срока, выбранного в разделе «Созвон»."
           }
         }
       }
@@ -435,22 +515,12 @@
         }
       }
     },
-    "Choose a meeting": {
+    "Choose images, PDFs, text, audio or video files for Siri+ to analyze.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выберите созвон"
-          }
-        }
-      }
-    },
-    "Choose images, PDFs or text files for Siri+ to analyze.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выберите изображения, PDF или текстовые файлы, которые Siri+ проанализирует."
+            "value": "Выберите изображения, PDF, текстовые, аудио- или видеофайлы, которые Siri+ проанализирует."
           }
         }
       }
@@ -481,6 +551,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Claude Code не смог выполнить запрос."
+          }
+        }
+      }
+    },
+    "Claude Code did not report the account limits.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code не сообщил лимиты аккаунта."
           }
         }
       }
@@ -545,22 +625,22 @@
         }
       }
     },
+    "Close": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Закрыть"
+          }
+        }
+      }
+    },
     "Conversation": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Диалог"
-          }
-        }
-      }
-    },
-    "Conversation history and screenshots are not saved to disk.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "История диалога и снимки не сохраняются на диск."
           }
         }
       }
@@ -625,12 +705,42 @@
         }
       }
     },
+    "Could not read the ChatGPT usage limits.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось получить лимиты ChatGPT."
+          }
+        }
+      }
+    },
     "Could not read the model's response.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Не удалось прочитать ответ модели."
+          }
+        }
+      }
+    },
+    "Current meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текущий созвон"
+          }
+        }
+      }
+    },
+    "Day": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "День"
           }
         }
       }
@@ -865,16 +975,6 @@
         }
       }
     },
-    "History": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "История"
-          }
-        }
-      }
-    },
     "If Siri+ is already switched on in System Settings, switch it off and on again: macOS treats every new build as a new app.": {
       "localizations": {
         "ru": {
@@ -955,12 +1055,12 @@
         }
       }
     },
-    "Keep meetings in History": {
+    "Keep chats and meetings": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Хранить созвоны в Истории"
+            "value": "Хранить чаты и созвоны"
           }
         }
       }
@@ -991,6 +1091,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Предупредите участников, что используете помощника."
+          }
+        }
+      }
+    },
+    "Listening": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слушаю"
           }
         }
       }
@@ -1031,6 +1141,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Слушаю… Текст появится, когда кто-нибудь заговорит."
+          }
+        }
+      }
+    },
+    "Loading…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загружаю…"
+          }
+        }
+      }
+    },
+    "Main": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основной"
           }
         }
       }
@@ -1135,22 +1265,22 @@
         }
       }
     },
-    "New Conversation": {
+    "New Chat": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Новый диалог"
+            "value": "Новый чат"
           }
         }
       }
     },
-    "New Conversation (⌘N)": {
+    "New Chat (⌘N)": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Новый диалог (⌘N)"
+            "value": "Новый чат (⌘N)"
           }
         }
       }
@@ -1175,6 +1305,16 @@
         }
       }
     },
+    "No chats yet": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чатов пока нет"
+          }
+        }
+      }
+    },
     "No display is available. Connect a display and take the screenshot again.": {
       "localizations": {
         "ru": {
@@ -1195,16 +1335,6 @@
         }
       }
     },
-    "No meetings yet": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Созвонов пока нет"
-          }
-        }
-      }
-    },
     "No microphone access. Allow it in System Settings → Privacy & Security → Microphone, or turn off your voice in Siri+ Settings.": {
       "localizations": {
         "ru": {
@@ -1221,6 +1351,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Снимок не получен. Проверьте доступ к записи экрана в настройках macOS и повторите. %@"
+          }
+        }
+      }
+    },
+    "No speech was recognized in %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В %@ не удалось распознать речь."
           }
         }
       }
@@ -1251,6 +1391,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не установлен"
+          }
+        }
+      }
+    },
+    "Not started": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не начат"
+          }
+        }
+      }
+    },
+    "Nothing found.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ничего не найдено."
           }
         }
       }
@@ -1415,6 +1575,16 @@
         }
       }
     },
+    "Past meetings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прошлые созвоны"
+          }
+        }
+      }
+    },
     "Ports 1455 and 1457 are busy, so the sign-in callback cannot be received. Close the app using them and try again.": {
       "localizations": {
         "ru": {
@@ -1471,6 +1641,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Распознавать и мой голос (микрофон)"
+          }
+        }
+      }
+    },
+    "Recognizing speech…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Распознаю речь…"
           }
         }
       }
@@ -1635,12 +1815,32 @@
         }
       }
     },
+    "Search chats": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поиск по чатам"
+          }
+        }
+      }
+    },
     "Search meetings": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Поиск по созвонам"
+          }
+        }
+      }
+    },
+    "Secondary": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дополнительный"
           }
         }
       }
@@ -1975,6 +2175,16 @@
         }
       }
     },
+    "Starting…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запускаю…"
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "ru": {
@@ -2011,16 +2221,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Остановить созвон и сохранить в Историю?"
-          }
-        }
-      }
-    },
-    "Stored on this Mac": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Хранится на этом Mac"
           }
         }
       }
@@ -2111,6 +2311,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Звонок в %@ закончился"
+          }
+        }
+      }
+    },
+    "The chat history could not be read, so new chats are not saved. File: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать историю чатов, поэтому новые чаты не сохраняются. Файл: %@"
+          }
+        }
+      }
+    },
+    "The chat history was not saved. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История чатов не сохранена. %@"
           }
         }
       }
@@ -2245,6 +2465,16 @@
         }
       }
     },
+    "The sound in %@ could not be read. Formats macOS plays, such as MP3, M4A, WAV, MP4 and MOV, are supported.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать звук в %@. Поддерживаются форматы, которые воспроизводит macOS: MP3, M4A, WAV, MP4, MOV и другие."
+          }
+        }
+      }
+    },
     "The speech recognition model did not report an audio format.": {
       "localizations": {
         "ru": {
@@ -2325,6 +2555,16 @@
         }
       }
     },
+    "Transcript of the speech in this file, recognized automatically (%@):": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расшифровка речи из этого файла, распознана автоматически (%@):"
+          }
+        }
+      }
+    },
     "Turned off": {
       "localizations": {
         "ru": {
@@ -2355,6 +2595,16 @@
         }
       }
     },
+    "Updated %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновлено в %@"
+          }
+        }
+      }
+    },
     "Updates": {
       "localizations": {
         "ru": {
@@ -2365,12 +2615,42 @@
         }
       }
     },
+    "Usage limits": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Лимиты"
+          }
+        }
+      }
+    },
     "Waiting for sign-in…": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Жду входа…"
+          }
+        }
+      }
+    },
+    "Week": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Неделя"
+          }
+        }
+      }
+    },
+    "Week (%@)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Неделя (%@)"
           }
         }
       }
@@ -2431,6 +2711,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "У вас %@."
+          }
+        }
+      }
+    },
+    "Your chats are saved on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чаты сохраняются на этом Mac."
+          }
+        }
+      }
+    },
+    "resets %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сброс %@"
+          }
+        }
+      }
+    },
+    "resets %@ (%@)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сброс %@ (%@)"
           }
         }
       }

@@ -2,10 +2,18 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct HistoryView: View {
+/// The Meeting tab: the current meeting first, then past meetings with their summaries.
+struct HistoryView<Live: View>: View {
+    enum Selection: Hashable {
+        case live
+        case record(UUID)
+    }
+
     @ObservedObject var history: MeetingHistory
+    @ObservedObject var meeting: MeetingModel
     let askAbout: (MeetingRecord) -> Void
-    @State private var selectedID: UUID?
+    @ViewBuilder let live: () -> Live
+    @State private var selection: Selection = .live
     @State private var pendingDeletion: MeetingRecord?
     @State private var query = ""
 
@@ -14,60 +22,90 @@ struct HistoryView: View {
     var body: some View {
         HStack(spacing: 0) {
             meetingList
-                .frame(minWidth: 200, idealWidth: 240, maxWidth: 300, maxHeight: .infinity)
+                .frame(minWidth: 170, idealWidth: 210, maxWidth: 260, maxHeight: .infinity)
             Divider()
             Group {
-                if let record = history.records.first(where: { $0.id == selectedID }) {
-                    MeetingDetail(record: record, history: history, askAbout: askAbout).id(record.id)
-                } else {
-                    ContentUnavailableView("Choose a meeting", systemImage: "clock.arrow.circlepath")
+                switch selection {
+                case .live:
+                    live()
+                case .record(let id):
+                    if let record = history.records.first(where: { $0.id == id }) {
+                        MeetingDetail(record: record, history: history, askAbout: askAbout).id(record.id)
+                    } else {
+                        live()
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("History")
-        .navigationSubtitle("Stored on this Mac")
-        .onAppear { if selectedID == nil { selectedID = history.records.first?.id } }
-        .onChange(of: history.records.first?.id) { selectedID = history.records.first?.id }
+        .navigationTitle("Meeting")
+        // A meeting that just ended opens with its summary; a starting one shows the live view.
+        .onChange(of: history.records.first?.id) { _, id in if let id { selection = .record(id) } }
+        .onChange(of: meeting.phase) { _, phase in if phase != .idle { selection = .live } }
         .searchable(text: $query, placement: .toolbar, prompt: Text("Search meetings"))
         .confirmationDialog(
             "Delete the meeting?",
             isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
             presenting: pendingDeletion
         ) { record in
-            Button("Delete", role: .destructive) { history.delete(record.id) }
+            Button("Delete", role: .destructive) {
+                if selection == .record(record.id) { selection = .live }
+                history.delete(record.id)
+            }
         } message: { _ in
             Text("The transcript and summary are removed from this Mac.")
         }
     }
 
-    @ViewBuilder
     private var meetingList: some View {
-        if history.records.isEmpty {
-            ContentUnavailableView {
-                Label("No meetings yet", systemImage: "clock.arrow.circlepath")
-            } description: {
-                Text("Finished meetings appear here with a title and a summary.")
-            }
-        } else if visibleRecords.isEmpty {
-            ContentUnavailableView.search(text: query)
-        } else {
-            List(visibleRecords, selection: $selectedID) { record in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(record.displayTitle)
-                        .font(.callout)
-                        .lineLimit(2)
-                    Text(record.startedAt, format: .dateTime.day().month().year().hour().minute())
+        List(selection: Binding(get: { selection }, set: { if let value = $0 { selection = value } })) {
+            liveRow.tag(Selection.live)
+            Section("Past meetings") {
+                if history.records.isEmpty {
+                    Text("Finished meetings appear here with a title and a summary.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                } else if visibleRecords.isEmpty {
+                    Text("Nothing found.").font(.caption).foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 2)
-                .tag(record.id)
-                .contextMenu {
-                    Button("Delete", systemImage: "trash", role: .destructive) { pendingDeletion = record }
+                ForEach(visibleRecords) { record in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(record.displayTitle)
+                            .font(.callout)
+                            .lineLimit(2)
+                        Text(record.startedAt, format: .dateTime.day().month().year().hour().minute())
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                    .tag(Selection.record(record.id))
+                    .contextMenu {
+                        Button("Delete", systemImage: "trash", role: .destructive) { pendingDeletion = record }
+                    }
                 }
             }
         }
+    }
+
+    private var liveRow: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Current meeting").font(.callout.weight(.medium))
+                Group {
+                    switch meeting.phase {
+                    case .running: Text("Listening")
+                    case .starting: Text("Starting…")
+                    case .idle: Text("Not started")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: meeting.isRunning ? "record.circle.fill" : "waveform")
+                .foregroundStyle(meeting.isRunning ? Color.red : Color.accentColor)
+        }
+        .padding(.vertical, 2)
     }
 }
 

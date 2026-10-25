@@ -28,6 +28,11 @@ fi
 sign() {
     codesign --force --sign "$identity" --keychain "$keychain" --options runtime --timestamp=none --entitlements "$2" "$1"
 }
+# Debug builds keep code in separate dylibs (SiriPlus.debug.dylib, __preview.dylib). macOS refuses to load
+# libraries signed differently from the app, so they get the same certificate, innermost first.
+find "$app" -name "*.dylib" -type f -print0 | while IFS= read -r -d '' library; do
+    codesign --force --sign "$identity" --keychain "$keychain" --options runtime --timestamp=none "$library"
+done
 widget="$app/Contents/PlugIns/SiriPlusWidget.appex"
 [ -d "$widget" ] && sign "$widget" "$project_dir/SiriPlusWidget/SiriPlusWidget.entitlements"
 sign "$app" "$project_dir/SiriPlus/Resources/SiriPlus.entitlements"

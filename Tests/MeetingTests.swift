@@ -297,9 +297,76 @@ struct DictationCandidateTests {
         #expect(DictationCandidate.best(of: [first, second])?.text.text == "one")
     }
 
+    @Test func shownLanguageChangesOnlyWithAClearLead() {
+        var english = DictationCandidate(), russian = DictationCandidate()
+        english.apply("Previous", confidence: [0.95], isFinal: false)
+        russian.apply("Привет", confidence: [0.93], isFinal: false)
+        #expect(DictationCandidate.leader(of: [english, russian], current: nil) == 0)
+        russian.apply("Привет", confidence: [0.97], isFinal: false)
+        #expect(DictationCandidate.leader(of: [english, russian], current: 0) == 0)
+        russian.apply("Привет", confidence: [0.99, 0.99], isFinal: false)
+        english.apply("Previous", confidence: [0.6, 0.5], isFinal: false)
+        #expect(DictationCandidate.leader(of: [english, russian], current: 0) == 1)
+    }
+
     @Test @MainActor func chosenLanguageOverridesSystemLanguages() {
-        #expect(VoiceInput.locales(for: AssistantPreferences(transcriptionLocale: "ru-RU")).map(\.identifier) == ["ru-RU"])
-        let automatic = VoiceInput.locales(for: AssistantPreferences())
-        #expect(!automatic.isEmpty && automatic.count <= 2)
+        #expect(AssistantPreferences(transcriptionLocale: "ru-RU").speechLocales.map(\.identifier) == ["ru-RU"])
+        let automatic = AssistantPreferences().speechLocales
+        #expect(!automatic.isEmpty && automatic.count <= SpeechLanguages.maximum)
+    }
+
+    @Test func keyboardLayoutsAddLanguages() {
+        let locales = SpeechLanguages.candidates(preferred: ["en-US", "en-GB"], keyboard: ["en", "ru", "uk", "de"])
+        #expect(locales.map(\.identifier) == ["en-US", "ru", "uk"])
+        #expect(SpeechLanguages.candidates(preferred: [], keyboard: []).map(\.identifier) == ["en-US"])
+    }
+}
+
+@Suite
+struct LanguageLockTests {
+    @Test func keepsTheClearlyMoreConfidentLanguage() {
+        var lock = LanguageLock(count: 2)
+        #expect(lock.apply(0, text: "Add", confidence: [0.3], isFinal: false) == [.segment("Add", isFinal: false)])
+        #expect(lock.apply(1, text: "Открой", confidence: [0.9], isFinal: false) == [.segment("Открой", isFinal: false)])
+        _ = lock.apply(0, text: "Nam after I need", confidence: [0.3, 0.4, 0.2, 0.3], isFinal: true)
+        let outputs = lock.apply(1, text: "Напомни мне завтра", confidence: [0.95, 0.97, 0.96], isFinal: true)
+        #expect(outputs == [.locked(1), .segment("Напомни мне завтра", isFinal: true), .segment("", isFinal: false)])
+        #expect(lock.chosen == 1)
+        #expect(lock.apply(0, text: "my Chitra", confidence: [0.2], isFinal: true).isEmpty)
+        #expect(lock.apply(1, text: "позвонить маме", confidence: [0.9], isFinal: true) == [.segment("позвонить маме", isFinal: true)])
+    }
+
+    @Test func waitsForEveryLanguageToRateWords() {
+        var lock = LanguageLock(count: 2)
+        _ = lock.apply(1, text: "Да привет открой", confidence: [], isFinal: false)
+        _ = lock.apply(0, text: "The previous is after", confidence: [0.61, 0.89, 0.6, 0.7], isFinal: true)
+        #expect(lock.chosen == nil)
+        _ = lock.apply(1, text: "Да привет открой календарь", confidence: [0.94, 0.98, 0.99, 0.98], isFinal: true)
+        #expect(lock.chosen == 1)
+    }
+
+    @Test func waitsWhileLanguagesAreClose() {
+        var lock = LanguageLock(count: 2)
+        _ = lock.apply(0, text: "one two three", confidence: [0.9, 0.9, 0.9], isFinal: true)
+        _ = lock.apply(1, text: "раз два три", confidence: [0.88, 0.88, 0.88], isFinal: true)
+        #expect(lock.chosen == nil)
+        let words = Array(repeating: "word", count: 9).joined(separator: " ")
+        _ = lock.apply(0, text: words, confidence: Array(repeating: 0.9, count: 9), isFinal: true)
+        #expect(lock.chosen == 0)
+    }
+
+    @Test func shortRepliesAreKeptWhenListeningEnds() {
+        var lock = LanguageLock(count: 2)
+        _ = lock.apply(0, text: "Previous", confidence: [0.5], isFinal: true)
+        _ = lock.apply(1, text: "Привет", confidence: [0.96], isFinal: true)
+        #expect(lock.chosen == nil)
+        #expect(lock.finish() == [.segment("Привет", isFinal: true)])
+        #expect(lock.finish().isEmpty)
+    }
+
+    @Test func singleLanguageNeedsNoChoice() {
+        var lock = LanguageLock(count: 1)
+        #expect(lock.chosen == 0)
+        #expect(lock.apply(0, text: "Hello", confidence: [], isFinal: true) == [.segment("Hello", isFinal: true)])
     }
 }

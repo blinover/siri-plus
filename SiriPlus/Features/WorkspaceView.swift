@@ -14,19 +14,19 @@ struct WorkspaceView: View {
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
         } detail: {
             Group {
-                switch model.selectedTab ?? .assistant {
-                case .assistant:
+                switch model.selectedTab ?? .chat {
+                case .chat:
                     ChatView(model: model)
                 case .meeting:
-                    MeetingView(
-                        meeting: model.meeting,
-                        permissions: model.permissions,
-                        isModelReady: model.isModelReady,
-                        showPanel: { model.showHintPanel?() },
-                        openSettings: { model.selectedTab = .settings }
-                    )
-                case .history:
-                    HistoryView(history: model.history, askAbout: model.askAbout)
+                    HistoryView(history: model.history, meeting: model.meeting, askAbout: model.askAbout) {
+                        MeetingView(
+                            meeting: model.meeting,
+                            permissions: model.permissions,
+                            isModelReady: model.isModelReady,
+                            showPanel: { model.showHintPanel?() },
+                            openSettings: { model.selectedTab = .settings }
+                        )
+                    }
                 case .settings:
                     PreferencesView(model: model)
                 }
@@ -34,16 +34,16 @@ struct WorkspaceView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Errors float over the content as tinted glass instead of pushing it down.
             .overlay(alignment: .top) {
-                if let error = model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage {
+                if let error = model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage ?? model.chats.errorMessage {
                     errorBanner(error)
                         .padding(.horizontal, 16)
                         .padding(.top, 6)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage)
+            .animation(.smooth, value: model.errorMessage ?? model.meeting.errorMessage ?? model.history.errorMessage ?? model.chats.errorMessage)
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 820, minHeight: 480)
         .tint(.indigo)
         .task { await model.refreshAccounts() }
     }
@@ -55,8 +55,14 @@ struct WorkspaceView: View {
                 Label("Meeting in progress", systemImage: "record.circle")
                     .foregroundStyle(.red)
             } else if model.isModelReady {
-                Label("\(model.preferences.provider.title) connected", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                if let usage = model.usage.usage(for: model.preferences.selection), let compact = usage.compactText {
+                    Label("\(model.preferences.provider.title) · \(compact)", systemImage: "gauge.with.dots.needle.50percent")
+                        .foregroundStyle(usage.limits.contains { $0.remainingPercent < 10 } ? .red : .green)
+                        .help(usage.limits.map(\.summary).joined(separator: "\n"))
+                } else {
+                    Label("\(model.preferences.provider.title) connected", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
             } else {
                 Label("Sign-in required", systemImage: "exclamationmark.circle.fill")
                     .foregroundStyle(.orange)
@@ -82,6 +88,7 @@ struct WorkspaceView: View {
                 model.errorMessage = nil
                 model.meeting.errorMessage = nil
                 model.history.errorMessage = nil
+                model.chats.errorMessage = nil
             } label: {
                 Image(systemName: "xmark")
             }

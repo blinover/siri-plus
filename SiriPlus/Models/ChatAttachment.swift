@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 
 /// A file the user attached to a question. Everything is turned into what every provider accepts:
 /// pictures into a JPEG image, documents into plain text read on this Mac.
-struct ChatAttachment: Identifiable, Equatable, Sendable {
-    enum Content: Equatable, Sendable {
+struct ChatAttachment: Identifiable, Equatable, Codable, Sendable {
+    enum Content: Equatable, Codable, Sendable {
         case image(Data)
         case text(String)
     }
@@ -33,7 +33,10 @@ struct ChatAttachment: Identifiable, Equatable, Sendable {
     var symbol: String {
         switch content {
         case .image: "photo"
-        case .text: name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc.text"
+        case .text:
+            if name.lowercased().hasSuffix(".pdf") { "doc.richtext" }
+            else if let type = UTType(filenameExtension: (name as NSString).pathExtension), type.conforms(to: .audiovisualContent) { "waveform" }
+            else { "doc.text" }
         }
     }
 }
@@ -45,7 +48,7 @@ enum AttachmentError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .unsupported(let name): String(localized: "\(name) cannot be attached: only images, PDFs and text files are supported.")
+        case .unsupported(let name): String(localized: "\(name) cannot be attached: images, PDFs, text, audio and video files are supported.")
         case .unreadable(let name): String(localized: "\(name) could not be read.")
         case .empty(let name): String(localized: "\(name) has no text to analyze.")
         }

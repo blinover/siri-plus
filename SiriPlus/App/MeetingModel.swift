@@ -114,7 +114,7 @@ final class MeetingModel: ObservableObject {
         do {
             let events = try await service.start(MeetingConfiguration(
                 source: source,
-                locale: settings.speechLocale,
+                locales: settings.speechLocales,
                 capturesMicrophone: settings.capturesMicrophone,
                 contextualStrings: MeetingConfiguration.contextualStrings(from: notes)
             ))

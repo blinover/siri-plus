@@ -33,3 +33,20 @@ struct AttachmentChip: View {
         .background(.quaternary.opacity(0.6), in: Capsule())
     }
 }
+
+/// A file whose speech is still being recognized.
+struct ProcessingChip: View {
+    let name: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ProgressView().controlSize(.mini)
+            Text(name).lineLimit(1).truncationMode(.middle).frame(maxWidth: 160)
+        }
+        .font(.callout)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.quaternary.opacity(0.6), in: Capsule())
+        .help("Recognizing speech…")
+    }
+}

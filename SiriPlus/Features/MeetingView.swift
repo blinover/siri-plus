@@ -11,10 +11,10 @@ struct MeetingView: View {
     var body: some View {
         HStack(spacing: 0) {
             transcriptColumn
-                .frame(minWidth: 320, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             hintsColumn
-                .frame(minWidth: 260, idealWidth: 300, maxWidth: 360, maxHeight: .infinity)
+                .frame(minWidth: 200, idealWidth: 280, maxWidth: 340, maxHeight: .infinity)
         }
         .safeAreaInset(edge: .top) { statusBar }
         .navigationTitle("Meeting")

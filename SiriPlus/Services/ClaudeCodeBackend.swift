@@ -88,6 +88,17 @@ struct ClaudeCodeBackend: ModelBackend {
         guard NSWorkspace.shared.open(script) else { throw ClaudeCodeError.failed(String(localized: "Could not open Terminal.")) }
     }
 
+    /// Subscription limits from Claude Code's `/usage` report; it sends no request to the model.
+    static func usage() async throws -> AccountUsage {
+        guard let executable = await locate() else { throw ClaudeCodeError.notInstalled }
+        let result = await runCommand(executable, ["-p", "/usage", "--output-format", "json", "--safe-mode", "--tools", "", "--no-session-persistence"])
+        guard let object = try? JSONSerialization.jsonObject(with: Data(result.stdout.utf8)) as? [String: Any],
+              object["is_error"] as? Bool != true, let report = object["result"] as? String else {
+            throw ClaudeCodeError.failed(String(localized: "Claude Code did not report the account limits."))
+        }
+        return AccountUsage(plan: await status().subscription, limits: UsageParser.claude(report: report), fetchedAt: Date())
+    }
+
     // MARK: Requests
 
     static func arguments(model: String, effort: String, systemPromptFile: String) -> [String] {

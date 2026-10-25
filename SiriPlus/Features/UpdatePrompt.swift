@@ -14,7 +14,10 @@ final class UpdatePrompt {
     init(updates: UpdateModel) {
         self.updates = updates
         changes = updates.$offer.combineLatest(updates.$state, updates.$notice, updates.$isCheckingVisibly)
-            .map { offer, state, notice, checking -> Bool in
+            .combineLatest(updates.$isPromptDismissed)
+            .map { values, dismissed -> Bool in
+                let (offer, state, notice, checking) = values
+                if dismissed { return false }
                 if case .installing = state { return true }
                 return offer != nil || notice != nil || checking
             }
@@ -118,6 +121,12 @@ private struct UpdatePromptView: View {
                 Button("Install") { Task { await updates.install() } }
                     .buttonStyle(.glassProminent)
             }
+            Button { updates.dismissPrompt() } label: { Image(systemName: "xmark") }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.small)
+                .help("Close")
+                .accessibilityLabel("Close")
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
