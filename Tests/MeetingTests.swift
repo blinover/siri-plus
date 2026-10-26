@@ -1,3 +1,4 @@
+import CoreAudio
 import Foundation
 import Testing
 @testable import SiriPlusCore
@@ -180,6 +181,19 @@ struct MeetingModelTests {
         #expect(service.configuration?.contextualStrings == ["Проект", "Yandex", "Cloud", "Анна", "Петрова", "Кластер", "k8s", "Q4"])
         await meeting.stop()
         #expect(MeetingConfiguration.contextualStrings(from: "один Два три Четыре", limit: 1) == ["Два"])
+    }
+
+    @Test func speakersWarningFollowsTheOutput() async throws {
+        let (meeting, service, _) = makeMeeting()
+        await meeting.start()
+        service.send(.loudspeaker(true))
+        try await eventually { meeting.playsAloud }
+        service.send(.loudspeaker(false))
+        try await eventually { !meeting.playsAloud }
+        service.send(.loudspeaker(true))
+        try await eventually { meeting.playsAloud }
+        await meeting.stop()
+        #expect(!meeting.playsAloud)
     }
 
     @Test func failedStartShowsErrorAndStaysIdle() async {
@@ -390,5 +404,49 @@ struct LanguageLockTests {
         var lock = LanguageLock(count: 1)
         #expect(lock.chosen == 0)
         #expect(lock.apply(0, text: "Hello", confidence: [], isFinal: true) == [.segment("Hello", isFinal: true)])
+    }
+}
+
+@Suite
+struct EchoGateTests {
+    @Test func microphoneIsFreeWhileTheOtherSideIsSilent() {
+        var gate = EchoGate()
+        let beforeThem = gate.passesMe(0.001)
+        gate.hearThem(0.0001)
+        let afterQuietThem = gate.passesMe(0.2)
+        #expect(beforeThem && afterQuietThem)
+    }
+
+    @Test func echoIsHeldBackButTalkingOverThemPasses() {
+        var gate = EchoGate()
+        // They speak; the microphone hears them at about 30% of their level.
+        for _ in 0..<50 {
+            gate.hearThem(0.1)
+            _ = gate.passesMe(0.03)
+        }
+        #expect(abs(gate.echoRatio - 0.3) < 0.05)
+        let echo = gate.passesMe(0.035)
+        #expect(!echo)
+        // The user talks over them, several times louder than the echo.
+        gate.hearThem(0.1)
+        let overThem = gate.passesMe(0.15)
+        #expect(overThem)
+    }
+
+    @Test func theirLevelFadesAfterTheyStop() {
+        var gate = EchoGate()
+        gate.hearThem(0.1)
+        for _ in 0..<40 { gate.hearThem(0) }
+        let passes = gate.passesMe(0.01)
+        #expect(gate.themLevel < EchoGate.silence)
+        #expect(passes)
+    }
+
+    @Test func speakersAreToldFromHeadsets() {
+        #expect(AudioOutput.isLoudspeaker(transport: kAudioDeviceTransportTypeBuiltIn, dataSource: 0x6973_706B)) // 'ispk'
+        #expect(!AudioOutput.isLoudspeaker(transport: kAudioDeviceTransportTypeBuiltIn, dataSource: 0x6864_706E)) // 'hdpn'
+        #expect(AudioOutput.isLoudspeaker(transport: kAudioDeviceTransportTypeHDMI, dataSource: nil))
+        #expect(!AudioOutput.isLoudspeaker(transport: kAudioDeviceTransportTypeBluetooth, dataSource: nil))
+        #expect(!AudioOutput.isLoudspeaker(transport: nil, dataSource: nil))
     }
 }
