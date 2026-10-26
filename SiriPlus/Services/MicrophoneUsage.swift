@@ -39,3 +39,41 @@ struct CoreAudioMicrophoneUsage: MicrophoneUsageSource {
         AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
     }
 }
+
+/// Where the default output device plays.
+enum AudioOutput {
+    /// Whether the call plays out loud, so the microphone hears it: built-in speakers, displays and AirPlay.
+    /// Bluetooth and USB devices count as headsets, since CoreAudio does not tell headphones from speakers there.
+    static func isLoudspeaker() -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var device = AudioObjectID(kAudioObjectUnknown)
+        var size = UInt32(MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device) == noErr else {
+            return false
+        }
+        return isLoudspeaker(
+            transport: value(kAudioDevicePropertyTransportType, scope: kAudioObjectPropertyScopeGlobal, of: device),
+            dataSource: value(kAudioDevicePropertyDataSource, scope: kAudioObjectPropertyScopeOutput, of: device)
+        )
+    }
+
+    static func isLoudspeaker(transport: UInt32?, dataSource: UInt32?) -> Bool {
+        switch transport {
+        // The built-in output is either the internal speakers or the headphone jack ('hdpn').
+        case kAudioDeviceTransportTypeBuiltIn: dataSource != 0x6864_706E
+        case kAudioDeviceTransportTypeHDMI, kAudioDeviceTransportTypeDisplayPort, kAudioDeviceTransportTypeAirPlay: true
+        default: false
+        }
+    }
+
+    private static func value(_ selector: AudioObjectPropertySelector, scope: AudioObjectPropertyScope, of device: AudioObjectID) -> UInt32? {
+        var address = AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
+        var value: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        return AudioObjectGetPropertyData(device, &address, 0, nil, &size, &value) == noErr ? value : nil
+    }
+}

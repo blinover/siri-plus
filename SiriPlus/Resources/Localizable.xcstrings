@@ -2115,6 +2115,16 @@
         }
       }
     },
+    "Sound is on the speakers: use headphones": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Звук идёт в динамики — наденьте наушники"
+          }
+        }
+      }
+    },
     "Speech is recognized on this Mac. ⌃⌥Space in any app asks for a hint.": {
       "localizations": {
         "ru": {
@@ -2671,6 +2681,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Без входа в модель расшифровка работает, а подсказки — нет."
+          }
+        }
+      }
+    },
+    "Without headphones the microphone hears the other side. Siri+ ignores the microphone while they speak, so words you say over them may be lost.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без наушников микрофон слышит собеседника. Пока он говорит, Siri+ не распознаёт микрофон, поэтому слова, сказанные поверх собеседника, могут пропасть."
           }
         }
       }

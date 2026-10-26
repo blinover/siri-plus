@@ -98,6 +98,13 @@ struct MeetingView: View {
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .glassEffect()
                         .help("Let the participants know you use an assistant.")
+                        if meeting.playsAloud {
+                            Label("Sound is on the speakers: use headphones", systemImage: "headphones")
+                                .lineLimit(1)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .glassEffect(.regular.tint(.orange.opacity(0.2)))
+                                .help("Without headphones the microphone hears the other side. Siri+ ignores the microphone while they speak, so words you say over them may be lost.")
+                        }
                     case .idle:
                         EmptyView()
                     }

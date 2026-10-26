@@ -53,6 +53,8 @@ final class MeetingModel: ObservableObject {
     @Published private(set) var transcript = Transcript()
     @Published private(set) var hints: [MeetingHint] = []
     @Published private(set) var levels: [Speaker: Float] = [:]
+    /// The call plays through speakers: the microphone hears the other side, and the transcript drops it as echo.
+    @Published private(set) var playsAloud = false
     @Published private(set) var sources: [MeetingAudioSource] = [.system]
     @Published var selectedSourceID = MeetingAudioSource.system.id
     @Published var notes = ""
@@ -106,6 +108,7 @@ final class MeetingModel: ObservableObject {
         transcript = Transcript()
         hints = []
         levels = [:]
+        playsAloud = false
         answeredLength = [:]
         wordsAtLastHint = 0
         lastHintAt = Date()
@@ -147,6 +150,7 @@ final class MeetingModel: ObservableObject {
         questionTask?.cancel()
         questionTask = nil
         levels = [:]
+        playsAloud = false
         await service.stop()
         eventsTask = nil
     }
@@ -183,6 +187,8 @@ final class MeetingModel: ObservableObject {
         switch event {
         case .level(let speaker, let level):
             levels[speaker] = level
+        case .loudspeaker(let isLoud):
+            playsAloud = isLoud
         case .segment(let segment):
             guard let turn = transcript.apply(segment), segment.isFinal else { return }
             let mode = preferences().hintMode

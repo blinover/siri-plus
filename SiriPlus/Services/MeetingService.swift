@@ -74,6 +74,8 @@ enum MeetingEvent: Sendable {
     case segment(TranscriptSegment)
     /// Normalised input level 0...1 for the level meters.
     case level(Speaker, Float)
+    /// Whether the call plays through speakers, so the microphone hears it; sent at the start and on every change.
+    case loudspeaker(Bool)
 }
 
 enum MeetingError: LocalizedError {
@@ -155,9 +157,15 @@ final class LiveMeetingService: MeetingService {
 
             let routes = self.routes
             let meters = Dictionary(uniqueKeysWithValues: speakers.map { ($0, LevelMeter(speaker: $0, continuation: continuation)) })
+            let echo = EchoGuard(continuation: continuation)
             let capture = MeetingAudioCapture(
                 onBuffer: { speaker, buffer in
                     meters[speaker]?.report(buffer)
+                    if speaker == .them {
+                        echo.hearThem(buffer)
+                    } else if !echo.passesMe(buffer) {
+                        return
+                    }
                     routes[speaker]?.append(buffer)
                 },
                 onStop: { error in continuation.finish(throwing: error) }
@@ -408,6 +416,81 @@ final class ChannelTranscriber: @unchecked Sendable {
 }
 
 /// Reports a throttled RMS level for one channel. Used from that channel's capture queue only.
+/// Keeps the speakers' echo out of "Me" while the call plays out loud. Teams and Zoom need the microphone
+/// untouched, so instead of cancelling echo in the signal, the microphone is not transcribed while the other
+/// side speaks, unless it is clearly louder than their usual echo (the user talks over them).
+struct EchoGate: Sendable {
+    /// Below this level (about -50 dBFS) the other side is silent.
+    static let silence: Float = 0.003
+    /// Microphone level relative to the other side's, learned while only they speak.
+    private(set) var echoRatio: Float = 0.5
+    /// The other side's recent level. It follows peaks at once and fades over a few hundred milliseconds,
+    /// since their sound reaches the microphone after the output latency.
+    private(set) var themLevel: Float = 0
+
+    mutating func hearThem(_ rms: Float) {
+        themLevel = max(rms, themLevel * 0.85)
+    }
+
+    mutating func passesMe(_ rms: Float) -> Bool {
+        guard themLevel > Self.silence else { return true }
+        let ratio = rms / themLevel
+        // Anything not far above the learned echo is taken for echo and refines the estimate.
+        if ratio < echoRatio * 4 {
+            echoRatio = min(max(echoRatio * 0.95 + ratio * 0.05, 0.01), 4)
+        }
+        return ratio >= echoRatio * 2
+    }
+}
+
+/// Runs the echo gate on the capture queues and follows the output device. Used only while it plays out loud.
+private final class EchoGuard: @unchecked Sendable {
+    private let lock = NSLock()
+    private let continuation: AsyncThrowingStream<MeetingEvent, Error>.Continuation
+    private var gate = EchoGate()
+    private var loudspeaker: Bool
+    private var checkedAt = Date()
+
+    init(continuation: AsyncThrowingStream<MeetingEvent, Error>.Continuation) {
+        self.continuation = continuation
+        loudspeaker = AudioOutput.isLoudspeaker()
+        continuation.yield(.loudspeaker(loudspeaker))
+    }
+
+    func hearThem(_ buffer: AVAudioPCMBuffer) {
+        let rms = buffer.rms
+        lock.withLock { gate.hearThem(rms) }
+    }
+
+    func passesMe(_ buffer: AVAudioPCMBuffer) -> Bool {
+        let rms = buffer.rms
+        let (passes, changed): (Bool, Bool?) = lock.withLock {
+            var changed: Bool?
+            // Headphones may be plugged in or AirPods connected during the call.
+            if Date().timeIntervalSince(checkedAt) > 2 {
+                checkedAt = Date()
+                let now = AudioOutput.isLoudspeaker()
+                if now != loudspeaker {
+                    loudspeaker = now
+                    changed = now
+                }
+            }
+            return (!loudspeaker || gate.passesMe(rms), changed)
+        }
+        if let changed { continuation.yield(.loudspeaker(changed)) }
+        return passes
+    }
+}
+
+private extension AVAudioPCMBuffer {
+    var rms: Float {
+        guard let samples = floatChannelData?[0], frameLength > 0 else { return 0 }
+        var sum: Float = 0
+        for index in 0..<Int(frameLength) { sum += samples[index] * samples[index] }
+        return (sum / Float(frameLength)).squareRoot()
+    }
+}
+
 private final class LevelMeter: @unchecked Sendable {
     private let speaker: Speaker
     private let continuation: AsyncThrowingStream<MeetingEvent, Error>.Continuation
@@ -420,12 +503,9 @@ private final class LevelMeter: @unchecked Sendable {
 
     func report(_ buffer: AVAudioPCMBuffer) {
         let now = Date()
-        guard now.timeIntervalSince(lastReport) > 0.1,
-              let samples = buffer.floatChannelData?[0], buffer.frameLength > 0 else { return }
+        guard now.timeIntervalSince(lastReport) > 0.1, buffer.frameLength > 0 else { return }
         lastReport = now
-        var sum: Float = 0
-        for index in 0..<Int(buffer.frameLength) { sum += samples[index] * samples[index] }
-        let rms = (sum / Float(buffer.frameLength)).squareRoot()
+        let rms = buffer.rms
         // Map roughly -50...0 dBFS to 0...1.
         let decibels = 20 * log10(max(rms, 0.000_01))
         continuation.yield(.level(speaker, min(max((decibels + 50) / 50, 0), 1)))
