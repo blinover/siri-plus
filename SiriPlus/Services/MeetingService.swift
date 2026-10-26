@@ -111,7 +111,6 @@ protocol MeetingService: AnyObject {
 @MainActor
 final class LiveMeetingService: MeetingService {
     private var capture: MeetingAudioCapture?
-    private var microphone: MicrophoneCapture?
     /// Recognisers still listening: every candidate language until a speaker's language is chosen.
     private var channels: [ChannelTranscriber] = []
     private var routes: [Speaker: SpeakerRoute] = [:]
@@ -156,21 +155,15 @@ final class LiveMeetingService: MeetingService {
 
             let routes = self.routes
             let meters = Dictionary(uniqueKeysWithValues: speakers.map { ($0, LevelMeter(speaker: $0, continuation: continuation)) })
-            let deliver: @Sendable (Speaker, AVAudioPCMBuffer) -> Void = { speaker, buffer in
-                meters[speaker]?.report(buffer)
-                routes[speaker]?.append(buffer)
-            }
             let capture = MeetingAudioCapture(
-                onBuffer: { buffer in deliver(.them, buffer) },
+                onBuffer: { speaker, buffer in
+                    meters[speaker]?.report(buffer)
+                    routes[speaker]?.append(buffer)
+                },
                 onStop: { error in continuation.finish(throwing: error) }
             )
-            try await capture.start(source: configuration.source)
+            try await capture.start(source: configuration.source, capturesMicrophone: configuration.capturesMicrophone)
             self.capture = capture
-            if configuration.capturesMicrophone {
-                let microphone = MicrophoneCapture()
-                try microphone.start { buffer in deliver(.me, buffer) }
-                self.microphone = microphone
-            }
             return events
         } catch {
             await stop()
@@ -181,8 +174,6 @@ final class LiveMeetingService: MeetingService {
     func stop() async {
         await capture?.stop()
         capture = nil
-        microphone?.stop()
-        microphone = nil
         // Finalising flushes the text still being recognised before the streams end.
         for channel in channels { await channel.finish() }
         for task in closing { await task.value }
@@ -441,56 +432,22 @@ private final class LevelMeter: @unchecked Sendable {
     }
 }
 
-/// The microphone with voice processing: macOS subtracts what the speakers play, so the other side is not transcribed twice.
-final class MicrophoneCapture: @unchecked Sendable {
-    private let engine = AVAudioEngine()
-
-    func start(onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void) throws {
-        let input = engine.inputNode
-        do {
-            try input.setVoiceProcessingEnabled(true)
-            // Keep the call and other apps at full volume.
-            input.voiceProcessingOtherAudioDuckingConfiguration = .init(enableAdvancedDucking: false, duckingLevel: .min)
-        } catch {
-            // Without it the microphone still works; the transcript drops most echo on its own.
-        }
-        let format = input.outputFormat(forBus: 0)
-        guard let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1) else {
-            throw MeetingError.noAudioFormat
-        }
-        input.installTap(onBus: 0, bufferSize: 4_096, format: format) { buffer, _ in
-            // Voice processing reports several channels; the cleaned voice is the first one.
-            guard let source = buffer.floatChannelData?[0],
-                  let copy = AVAudioPCMBuffer(pcmFormat: mono, frameCapacity: buffer.frameLength),
-                  let target = copy.floatChannelData?[0] else { return }
-            target.update(from: source, count: Int(buffer.frameLength))
-            copy.frameLength = buffer.frameLength
-            onBuffer(copy)
-        }
-        engine.prepare()
-        try engine.start()
-    }
-
-    func stop() {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-    }
-}
-
-/// Captures the meeting app's audio through ScreenCaptureKit.
+/// Captures the meeting app's audio and, optionally, the microphone through one ScreenCaptureKit stream.
+/// Not AVAudioEngine voice processing: it cancels echo, but Teams and Zoom then get silence from the microphone.
 final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
-    private let onBuffer: @Sendable (AVAudioPCMBuffer) -> Void
+    private let onBuffer: @Sendable (Speaker, AVAudioPCMBuffer) -> Void
     private let onStop: @Sendable (Error) -> Void
     private let audioQueue = DispatchQueue(label: "dev.siriplus.capture.them")
+    private let microphoneQueue = DispatchQueue(label: "dev.siriplus.capture.me")
     private let screenQueue = DispatchQueue(label: "dev.siriplus.capture.screen")
     private var stream: SCStream?
 
-    init(onBuffer: @escaping @Sendable (AVAudioPCMBuffer) -> Void, onStop: @escaping @Sendable (Error) -> Void) {
+    init(onBuffer: @escaping @Sendable (Speaker, AVAudioPCMBuffer) -> Void, onStop: @escaping @Sendable (Error) -> Void) {
         self.onBuffer = onBuffer
         self.onStop = onStop
     }
 
-    func start(source: MeetingAudioSource) async throws {
+    func start(source: MeetingAudioSource, capturesMicrophone: Bool) async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
         guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first else {
             throw MeetingError.noDisplay
@@ -514,6 +471,7 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
         configuration.excludesCurrentProcessAudio = true
         configuration.sampleRate = 48_000
         configuration.channelCount = 1
+        configuration.captureMicrophone = capturesMicrophone
         // Video is required by the stream but unused: keep it tiny and rare.
         configuration.width = 2
         configuration.height = 2
@@ -523,6 +481,9 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
         let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: screenQueue)
         try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
+        if capturesMicrophone {
+            try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: microphoneQueue)
+        }
         try await stream.startCapture()
         self.stream = stream
     }
@@ -533,8 +494,14 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
-        guard type == .audio, sampleBuffer.isValid, let buffer = sampleBuffer.pcmBuffer() else { return }
-        onBuffer(buffer)
+        let speaker: Speaker
+        switch type {
+        case .audio: speaker = .them
+        case .microphone: speaker = .me
+        default: return
+        }
+        guard sampleBuffer.isValid, let buffer = sampleBuffer.pcmBuffer() else { return }
+        onBuffer(speaker, buffer)
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
