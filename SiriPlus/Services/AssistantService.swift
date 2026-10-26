@@ -53,11 +53,14 @@ struct PreparedPrompt: Sendable, Equatable {
 
     let system: String
     let turns: [Turn]
-    /// "low" or "medium"; hints use "low" for speed.
-    let effort: String
+    /// The effort Siri+ picks for this kind of request: "low" or "medium". Routing replaces it with the level
+    /// chosen in Settings, adjusted to what the model accepts, or nil when the model takes no effort.
+    var effort: String?
     let maxTokens: Int
     /// The system prompt stays the same for a whole meeting and is worth caching.
     var cacheSystem = false
+    /// A live meeting hint: it must arrive within seconds, so it keeps a light effort whatever is chosen.
+    var isLive = false
 }
 
 /// One way of reaching a model: Claude API, Claude Code, OpenAI API or a ChatGPT account.
@@ -115,7 +118,8 @@ enum AssistantPrompts {
             turns: [.init(role: .user, text: hintUser(request))],
             effort: "low",
             maxTokens: 4_000,
-            cacheSystem: true
+            cacheSystem: true,
+            isLive: true
         )
     }
 
@@ -189,6 +193,7 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
     let claudeCode: any ModelBackend
     let openAIAPI: any ModelBackend
     let chatGPT: any ModelBackend
+    var catalog = ModelCatalog()
 
     func reply(to request: AssistantRequest) -> AsyncThrowingStream<String, Error> {
         route(AssistantPrompts.chat(request), selection: request.selection)
@@ -203,15 +208,17 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
     }
 
     private func route(_ prompt: PreparedPrompt, selection: ModelSelection) -> AsyncThrowingStream<String, Error> {
-        switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
-        case (.claude, .apiKey, _):
-            claudeAPI.stream(prompt, model: selection.claudeModel.rawValue)
-        case (.claude, .account, _):
-            claudeCode.stream(prompt, model: selection.claudeModel.cliAlias)
-        case (.openAI, _, .apiKey):
-            openAIAPI.stream(prompt, model: selection.openAIModel)
-        case (.openAI, _, .account):
-            chatGPT.stream(prompt, model: selection.openAIModel)
+        let (backend, route, model, chosen): (any ModelBackend, ModelCatalog.Route, String, String) =
+            switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
+            case (.claude, .apiKey, _): (claudeAPI, .claudeAPI, selection.claudeModel, selection.claudeEffort)
+            case (.claude, .account, _): (claudeCode, .claudeCode, selection.claudeModel, selection.claudeEffort)
+            case (.openAI, _, .apiKey): (openAIAPI, .openAIAPI, selection.openAIModel, selection.openAIEffort)
+            case (.openAI, _, .account): (chatGPT, .chatGPT, selection.openAIModel, selection.openAIEffort)
+            }
+        var prompt = prompt
+        prompt.effort = prompt.effort.flatMap { preferred in
+            ModelEffort.resolve(chosen: chosen, preferred: preferred, isLive: prompt.isLive, supported: catalog.efforts(for: route, model: model))
         }
+        return backend.stream(prompt, model: model)
     }
 }

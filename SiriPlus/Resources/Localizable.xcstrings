@@ -345,6 +345,26 @@
         }
       }
     },
+    "Automatic": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически"
+          }
+        }
+      }
+    },
+    "Automatic: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически: над краткими ответами модель думает недолго, над подробными — дольше. Подсказки на созвоне всегда с короткими размышлениями, чтобы приходить за секунды."
+          }
+        }
+      }
+    },
     "Brief": {
       "localizations": {
         "ru": {
@@ -555,6 +575,26 @@
         }
       }
     },
+    "Claude Code default": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По умолчанию в Claude Code"
+          }
+        }
+      }
+    },
+    "Claude Code did not list its models.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code не выдал список моделей."
+          }
+        }
+      }
+    },
     "Claude Code did not report the account limits.": {
       "localizations": {
         "ru": {
@@ -571,36 +611,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Claude Code не установлен. Установите его с code.claude.com и войдите в Настройках."
-          }
-        }
-      }
-    },
-    "Claude Haiku 5.5 — fastest and cheapest": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Haiku 5.5 — самый быстрый и дешёвый"
-          }
-        }
-      }
-    },
-    "Claude Opus 5.5 — most accurate": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Opus 5.5 — точнее всех"
-          }
-        }
-      }
-    },
-    "Claude Sonnet 5.5 — faster": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claude Sonnet 5.5 — быстрее"
           }
         }
       }
@@ -845,12 +855,32 @@
         }
       }
     },
+    "Effort": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Глубина размышлений"
+          }
+        }
+      }
+    },
     "Explain what’s on the screen": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Объясни, что на экране"
+          }
+        }
+      }
+    },
+    "Extra high": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Очень высокая"
           }
         }
       }
@@ -941,6 +971,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скрыть (Esc)"
+          }
+        }
+      }
+    },
+    "High": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Высокая"
           }
         }
       }
@@ -1155,6 +1195,16 @@
         }
       }
     },
+    "Low": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Низкая"
+          }
+        }
+      }
+    },
     "Main": {
       "localizations": {
         "ru": {
@@ -1165,12 +1215,32 @@
         }
       }
     },
+    "Maximum": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Максимальная"
+          }
+        }
+      }
+    },
     "Me": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Я"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Средняя"
           }
         }
       }
@@ -1231,6 +1301,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Микрофон"
+          }
+        }
+      }
+    },
+    "Minimal": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Минимальная"
           }
         }
       }
@@ -1371,6 +1451,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Выжимки пока нет."
+          }
+        }
+      }
+    },
+    "No thinking": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Без размышлений"
           }
         }
       }
@@ -2535,6 +2625,16 @@
         }
       }
     },
+    "This model has no effort setting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "У этой модели глубина не настраивается"
+          }
+        }
+      }
+    },
     "To get answers, sign in to Claude or ChatGPT in Settings.": {
       "localizations": {
         "ru": {
@@ -2591,6 +2691,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Напиши запрос…"
+          }
+        }
+      }
+    },
+    "Ultra": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ультра"
           }
         }
       }

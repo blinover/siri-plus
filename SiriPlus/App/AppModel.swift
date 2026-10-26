@@ -32,7 +32,10 @@ struct ProviderAccounts: Equatable {
     var hasClaudeKey = false
     var chatGPTEmail: String?
     var hasOpenAIKey = false
-    var chatGPTModels: [OpenAIModelOption] = []
+    /// Models listed for the signed-in account or the key; empty until loaded.
+    var claudeCodeModels: [ModelOption] = []
+    var claudeAPIModels: [ModelOption] = []
+    var chatGPTModels: [ModelOption] = []
 
     func isReady(_ selection: ModelSelection) -> Bool {
         switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
@@ -51,6 +54,8 @@ struct Credentials {
     var chatGPT = ChatGPTAccount()
     var claudeCodeStatus: @Sendable () async -> ClaudeCodeStatus = { await ClaudeCodeBackend.status() }
     var claudeUsage: @Sendable () async throws -> AccountUsage = { try await ClaudeCodeBackend.usage() }
+    var claudeCodeModels: @Sendable () async throws -> [ModelOption] = { try await ClaudeCodeBackend.models() }
+    var claudeAPIModels: @Sendable (String) async throws -> [ModelOption] = { try await ClaudeClient(apiKey: $0).models() }
 }
 
 @MainActor
@@ -80,7 +85,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var pendingAttachments: [ChatAttachment] = []
     /// Audio and video files whose speech is still being recognized; sending waits for them.
     @Published private(set) var processingAttachments: [String] = []
-    @Published private(set) var accounts = ProviderAccounts()
+    @Published private(set) var accounts = ProviderAccounts() {
+        didSet { syncCatalog() }
+    }
     @Published private(set) var isSigningIn = false
     @Published var errorMessage: String?
 
@@ -99,6 +106,7 @@ final class AppModel: ObservableObject {
     private let screenCapture: any ScreenCapturing
     private let preferencesStore: PreferencesStore
     private let credentials: Credentials
+    private let catalog: ModelCatalog
     private var replyTask: Task<Void, Never>?
     private var activeReplyID: UUID?
     private var captureID: UUID?
@@ -116,13 +124,16 @@ final class AppModel: ObservableObject {
         updateChecker: any UpdateChecking = GitHubUpdateChecker(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
     ) {
+        let catalog = ModelCatalog()
         let assistant = assistant ?? CloudAssistantService(
             claudeAPI: ClaudeAPIBackend(keyStore: credentials.claudeKey),
             claudeCode: ClaudeCodeBackend(),
             openAIAPI: OpenAIAPIBackend(keyStore: credentials.openAIKey),
-            chatGPT: ChatGPTAccountBackend(account: credentials.chatGPT)
+            chatGPT: ChatGPTAccountBackend(account: credentials.chatGPT),
+            catalog: catalog
         )
         self.assistant = assistant
+        self.catalog = catalog
         self.screenCapture = screenCapture
         self.preferencesStore = preferencesStore
         self.credentials = credentials
@@ -314,14 +325,32 @@ final class AppModel: ObservableObject {
 
     // MARK: Accounts
 
-    /// Re-reads sign-in state: Claude Code status, ChatGPT tokens and its model list.
+    /// Re-reads sign-in state: Claude Code status, ChatGPT tokens and the model lists.
     func refreshAccounts() async {
         accounts.claudeCode = await credentials.claudeCodeStatus()
         accounts.chatGPTEmail = await credentials.chatGPT.isSignedIn ? (await credentials.chatGPT.email ?? "ChatGPT") : nil
+        if accounts.claudeCode.signedIn, accounts.claudeCodeModels.isEmpty {
+            accounts.claudeCodeModels = (try? await credentials.claudeCodeModels()) ?? []
+        }
+        if accounts.hasClaudeKey, accounts.claudeAPIModels.isEmpty {
+            await loadClaudeAPIModels()
+        }
         if accounts.chatGPTEmail != nil, accounts.chatGPTModels.isEmpty {
             accounts.chatGPTModels = (try? await credentials.chatGPT.models()) ?? []
         }
         await refreshUsage()
+    }
+
+    private func loadClaudeAPIModels() async {
+        guard let key = try? credentials.claudeKey.read(), !key.isEmpty else { return }
+        accounts.claudeAPIModels = (try? await credentials.claudeAPIModels(key)) ?? []
+    }
+
+    /// Lets requests send only the efforts the listed models accept.
+    private func syncCatalog() {
+        if !accounts.claudeCodeModels.isEmpty { catalog.update(accounts.claudeCodeModels, for: .claudeCode) }
+        if !accounts.claudeAPIModels.isEmpty { catalog.update(accounts.claudeAPIModels, for: .claudeAPI) }
+        if !accounts.chatGPTModels.isEmpty { catalog.update(accounts.chatGPTModels, for: .chatGPT) }
     }
 
     /// Re-reads how much of each subscription is left.
@@ -336,6 +365,10 @@ final class AppModel: ObservableObject {
             try store(for: provider).save(trimmed)
             setHasKey(true, for: provider)
             errorMessage = nil
+            if provider == .claude {
+                accounts.claudeAPIModels = []
+                Task { await loadClaudeAPIModels() }
+            }
         } catch {
             errorMessage = String(localized: "The key was not saved. \(error.localizedDescription)")
         }
@@ -345,6 +378,7 @@ final class AppModel: ObservableObject {
         do {
             try store(for: provider).delete()
             setHasKey(false, for: provider)
+            if provider == .claude { accounts.claudeAPIModels = [] }
         } catch {
             errorMessage = String(localized: "The key was not deleted. \(error.localizedDescription)")
         }
@@ -359,7 +393,12 @@ final class AppModel: ObservableObject {
             for _ in 0..<100 {
                 try await Task.sleep(for: .seconds(3))
                 accounts.claudeCode = await credentials.claudeCodeStatus()
-                if accounts.claudeCode.signedIn { return }
+                if accounts.claudeCode.signedIn {
+                    // Another account may offer other models.
+                    accounts.claudeCodeModels = []
+                    await refreshAccounts()
+                    return
+                }
             }
         } catch is CancellationError {
         } catch {

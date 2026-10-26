@@ -35,7 +35,7 @@ struct AppModelTests {
         let second = try #require(model.send("Уточнение"))
         let request = await service.waitForRequest()
         #expect(request.messages.map(\.text) == ["Вопрос", "Первый ответ", "Уточнение"])
-        #expect(request.selection.claudeModel == .opus)
+        #expect(request.selection.claudeModel == "opus")
         service.complete("Второй ответ")
         await second.value
         #expect(model.messages.count == 4)
@@ -159,14 +159,29 @@ struct AppModelTests {
         defer { defaults.removePersistentDomain(forName: suite) }
         let store = PreferencesStore(defaults: defaults)
         let preferences = AssistantPreferences(
-            replyStyle: .detailed, showTimestamps: false, provider: .openAI, model: .haiku,
-            claudeAuth: .apiKey, openAIModel: "gpt-6-luna", hintMode: .manual, transcriptionLocale: "en-US"
+            replyStyle: .detailed, showTimestamps: false, provider: .openAI, claudeModel: "claude-opus-4-6",
+            claudeAPIModel: "claude-haiku-5-5", claudeAuth: .apiKey, claudeEffort: "xhigh", openAIModel: "gpt-6-luna",
+            openAIEffort: "high", hintMode: .manual, transcriptionLocale: "en-US"
         )
         store.save(preferences)
         #expect(PreferencesStore(defaults: defaults).load() == preferences)
 
         defaults.set(Data("broken".utf8), forKey: "assistant.preferences.v1")
         #expect(store.load() == AssistantPreferences())
+    }
+
+    @Test func claudeModelFromVersion03MapsToBothSignInMethods() throws {
+        let suite = "dev.siriplus.tests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(Data(#"{"model":"claude-sonnet-5-5","claudeAuth":"apiKey"}"#.utf8), forKey: "assistant.preferences.v1")
+        let loaded = PreferencesStore(defaults: defaults).load()
+        #expect(loaded.claudeModel == "sonnet")
+        #expect(loaded.claudeAPIModel == "claude-sonnet-5-5")
+        #expect(loaded.selection.claudeModel == "claude-sonnet-5-5")
+        var account = loaded
+        account.claudeAuth = .account
+        #expect(account.selection.claudeModel == "sonnet")
     }
 
     @Test func preferencesFromOlderVersionKeepTheirValues() throws {
@@ -177,7 +192,9 @@ struct AppModelTests {
         let loaded = PreferencesStore(defaults: defaults).load()
         #expect(loaded.replyStyle == .detailed)
         #expect(!loaded.showTimestamps)
-        #expect(loaded.model == .opus)
+        #expect(loaded.claudeModel == "opus")
+        #expect(loaded.claudeAPIModel == "claude-opus-5-5")
+        #expect(loaded.claudeEffort == ModelEffort.automatic)
         #expect(loaded.claudeAuth == .account)
         #expect(loaded.hintMode == .questionsAndTopic)
         #expect(loaded.transcriptionLocale == AssistantPreferences.systemLocale)
@@ -269,7 +286,9 @@ extension Credentials {
             openAIKey: MemorySecretStore(),
             chatGPT: ChatGPTAccount(store: MemorySecretStore()),
             claudeCodeStatus: { ClaudeCodeStatus() },
-            claudeUsage: { throw ClaudeCodeError.notInstalled }
+            claudeUsage: { throw ClaudeCodeError.notInstalled },
+            claudeCodeModels: { throw ClaudeCodeError.notInstalled },
+            claudeAPIModels: { _ in throw ClaudeError.missingAPIKey }
         )
     }
 }

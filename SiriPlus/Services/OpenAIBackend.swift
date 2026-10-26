@@ -42,7 +42,8 @@ struct ResponsesRequest: Encodable, Sendable {
     let model: String
     let instructions: String
     let input: [Message]
-    let reasoning: Reasoning
+    /// Nil for a model that takes no reasoning effort.
+    let reasoning: Reasoning?
     var stream = true
     /// The ChatGPT backend requires responses not to be stored.
     var store = false
@@ -50,7 +51,7 @@ struct ResponsesRequest: Encodable, Sendable {
     init(prompt: PreparedPrompt, model: String) {
         self.model = model
         instructions = prompt.system
-        reasoning = Reasoning(effort: prompt.effort)
+        reasoning = prompt.effort.map(Reasoning.init)
         input = prompt.turns.map { turn in
             var content: [Content] = []
             if turn.role == .user {
@@ -144,7 +145,7 @@ struct OpenAIAPIBackend: ModelBackend {
                     guard let key = try keyStore.read()?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty else {
                         throw OpenAIError.missingAPIKey
                     }
-                    let model = model.isEmpty ? OpenAIModelOption.apiModels[1].id : model
+                    let model = model.isEmpty ? ModelOption.openAIAPIDefault.id : model
                     let client = ResponsesClient(endpoint: Self.endpoint, headers: ["Authorization": "Bearer \(key)"])
                     try await client.streamText(ResponsesRequest(prompt: prompt, model: model)) { continuation.yield($0) }
                     continuation.finish()

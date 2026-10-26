@@ -99,9 +99,75 @@ struct ClaudeCodeBackend: ModelBackend {
         return AccountUsage(plan: await status().subscription, limits: UsageParser.claude(report: report), fetchedAt: Date())
     }
 
+    // MARK: Models
+
+    private static let modelsRequestID = "siriplus-models"
+
+    /// The models Claude Code offers the signed-in account, as its own model picker lists them. Only the
+    /// `initialize` control request is sent and the process ends once it answers, so no tokens are used.
+    static func models() async throws -> [ModelOption] {
+        guard let executable = await locate() else { throw ClaudeCodeError.notInstalled }
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = [
+            "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
+            "--safe-mode", "--tools", "", "--no-session-persistence",
+        ]
+        process.environment = signInEnvironment()
+        process.currentDirectoryURL = FileManager.default.temporaryDirectory
+        let input = Pipe(), output = Pipe()
+        process.standardInput = input
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        let request = #"{"type":"control_request","request_id":"\#(modelsRequestID)","request":{"subtype":"initialize"}}"#
+        input.fileHandleForWriting.write(Data((request + "\n").utf8))
+
+        let models = try await withThrowingTaskGroup(of: [ModelOption]?.self) { group in
+            group.addTask {
+                for try await line in output.fileHandleForReading.bytes.lines {
+                    if let models = try parseModels(controlResponse: line) { return models }
+                }
+                return nil
+            }
+            group.addTask {
+                // Ending the process also ends the read above.
+                try? await Task.sleep(for: .seconds(15))
+                process.terminate()
+                return nil
+            }
+            defer { group.cancelAll() }
+            return try await group.next() ?? nil
+        }
+        guard let models, !models.isEmpty else {
+            throw ClaudeCodeError.failed(String(localized: "Claude Code did not list its models."))
+        }
+        return models
+    }
+
+    /// Reads the models from Claude Code's answer to the `initialize` control request; nil for other lines.
+    static func parseModels(controlResponse line: String) throws -> [ModelOption]? {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+              object["type"] as? String == "control_response",
+              let response = object["response"] as? [String: Any],
+              response["request_id"] as? String == modelsRequestID else { return nil }
+        guard response["subtype"] as? String == "success",
+              let models = (response["response"] as? [String: Any])?["models"] as? [[String: Any]] else {
+            throw ClaudeCodeError.failed(response["error"] as? String ?? String(localized: "Claude Code did not list its models."))
+        }
+        var seen: Set<String> = []
+        return models.compactMap { entry in
+            guard let value = entry["value"] as? String, !value.isEmpty, seen.insert(value).inserted else { return nil }
+            let name = (entry["displayName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? value
+            // A model without effort support must get no `--effort`.
+            let efforts = entry["supportsEffort"] as? Bool == true ? entry["supportedEffortLevels"] as? [String] ?? [] : []
+            return ModelOption(id: value, title: name, detail: entry["description"] as? String, efforts: efforts)
+        }
+    }
+
     // MARK: Requests
 
-    static func arguments(model: String, effort: String, systemPromptFile: String) -> [String] {
+    static func arguments(model: String, effort: String?, systemPromptFile: String) -> [String] {
         [
             "-p", "--safe-mode",
             "--tools", "",
@@ -112,9 +178,8 @@ struct ClaudeCodeBackend: ModelBackend {
             "--verbose", "--include-partial-messages",
             "--no-session-persistence",
             "--model", model,
-            "--effort", effort,
             "--system-prompt-file", systemPromptFile,
-        ]
+        ] + (effort.map { ["--effort", $0] } ?? [])
     }
 
     /// The whole conversation as one stream-json user message.

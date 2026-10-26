@@ -51,7 +51,7 @@ actor ChatGPTAccount {
     private let store: any SecretStoring
     private let session: URLSession
     private var cachedTokens: ChatGPTTokens?
-    private var cachedModels: [OpenAIModelOption]?
+    private var cachedModels: [ModelOption]?
 
     init(store: any SecretStoring = KeychainStore(account: "chatgpt-oauth"), session: URLSession = .shared) {
         self.store = store
@@ -137,7 +137,7 @@ actor ChatGPTAccount {
     }
 
     /// Models the account may use, as listed by the backend.
-    func models() async throws -> [OpenAIModelOption] {
+    func models() async throws -> [ModelOption] {
         if let cachedModels { return cachedModels }
         let client = try await client()
         var components = URLComponents(url: Constants.backend.appendingPathComponent("models"), resolvingAgainstBaseURL: false)!
@@ -150,14 +150,20 @@ actor ChatGPTAccount {
               let list = (object["models"] ?? object["data"]) as? [[String: Any]] else {
             throw OpenAIError.failed(String(localized: "Could not load the list of ChatGPT models."))
         }
-        let models = list.compactMap { model -> OpenAIModelOption? in
+        let models = Self.parseModels(list)
+        cachedModels = models
+        return models
+    }
+
+    /// Visible models of the backend's list with the reasoning efforts each advertises.
+    static func parseModels(_ list: [[String: Any]]) -> [ModelOption] {
+        list.compactMap { model in
             guard let slug = model["slug"] as? String ?? model["id"] as? String else { return nil }
             let visibility = (model["visibility"] as? String)?.lowercased()
             guard visibility != "hide", visibility != "hidden" else { return nil }
-            return OpenAIModelOption(id: slug, title: model["display_name"] as? String ?? slug)
+            let efforts = (model["supported_reasoning_levels"] as? [[String: Any]])?.compactMap { $0["effort"] as? String }
+            return ModelOption(id: slug, title: model["display_name"] as? String ?? slug, detail: model["description"] as? String, efforts: efforts)
         }
-        cachedModels = models
-        return models
     }
 
     // MARK: Tokens

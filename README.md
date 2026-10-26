@@ -31,6 +31,7 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | Attach images, PDFs, text and code files | Mac + model |
 | ✅ | Transcribe audio and video files (MP3, M4A, WAV, AIFF, MP4, MOV…) | Mac |
 | ✅ | Claude: browser sign-in through Claude Code, or an API key | model |
+| ✅ | Every model your account offers, with its own effort levels | model |
 | ✅ | ChatGPT: browser sign-in to your account, or an API key | model |
 | ✅ | Subscription limits: how much is left and when it resets | Mac |
 | ✅ | Desktop widget and a Shortcuts action | Mac |
@@ -80,7 +81,9 @@ Tell participants you use an assistant: recording a conversation without consent
 | **Claude** | Through the official [Claude Code](https://code.claude.com/docs/en/setup): “Sign in to Claude” opens Terminal with `claude auth login`. Requests run through `claude -p` in safe mode (no tools, no saved sessions) and use your Pro/Max limits. | A key from [Claude Console](https://platform.claude.com/settings/keys); direct streaming requests to `api.anthropic.com`. |
 | **ChatGPT** | OAuth sign-in to your ChatGPT account (PKCE, loopback on port 1455/1457), as in Codex. Tokens live in the Keychain and refresh automatically. | An OpenAI API key, Responses API. |
 
-Claude models: Opus 5.5, Sonnet 5.5 or Haiku 5.5. Haiku is the fastest for meeting hints (the answer starts in about two seconds).
+The model list comes from your account: with a Claude sign-in, every model Claude Code offers you (Opus, Sonnet, Haiku, Fable and pinned older versions); with an API key, the models the key can use; with ChatGPT, the models your account lists. Haiku is the fastest for meeting hints (the answer starts in about two seconds).
+
+**Effort** sets how long the model thinks before answering, from low to maximum. Settings shows only the levels the chosen model accepts. “Automatic” thinks briefly for brief answers and longer for detailed ones. Meeting hints always think briefly so they arrive in seconds.
 
 With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint. API keys have no subscription limits.
 

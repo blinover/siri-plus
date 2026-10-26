@@ -212,11 +212,32 @@ struct PreferencesView: View {
             keyField(for: .claude, hasKey: model.accounts.hasClaudeKey, prompt: "sk-ant-…",
                      link: URL(string: "https://platform.claude.com/settings/keys")!)
         }
-        Picker("Model", selection: $model.preferences.model) {
-            ForEach(ClaudeModel.allCases) { model in
-                Text(model.title).tag(model)
-            }
+        if model.preferences.claudeAuth == .account {
+            modelPicker($model.preferences.claudeModel, options: model.accounts.claudeCodeModels.nonEmpty ?? ModelOption.claudeCodeDefaults)
+        } else {
+            modelPicker($model.preferences.claudeAPIModel, options: model.accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults)
         }
+        effortPicker($model.preferences.claudeEffort, levels: claudeEfforts ?? ModelEffort.claudeLevels)
+    }
+
+    /// Effort levels of the chosen Claude model, nil until its list is loaded.
+    private var claudeEfforts: [String]? {
+        let preferences = model.preferences
+        let options = preferences.claudeAuth == .account
+            ? model.accounts.claudeCodeModels
+            : model.accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults
+        let id = preferences.claudeAuth == .account ? preferences.claudeModel : preferences.claudeAPIModel
+        return options.first { $0.id == id }?.efforts
+    }
+
+    /// Effort levels of the chosen ChatGPT model; the account default is its first model.
+    private var openAIEfforts: [String]? {
+        let preferences = model.preferences
+        let options = preferences.openAIAuth == .account ? model.accounts.chatGPTModels : ModelOption.openAIAPIModels
+        let id = preferences.openAIModel.isEmpty
+            ? (preferences.openAIAuth == .account ? options.first?.id : ModelOption.openAIAPIDefault.id)
+            : preferences.openAIModel
+        return options.first { $0.id == id }?.efforts
     }
 
     @ViewBuilder
@@ -244,25 +265,61 @@ struct PreferencesView: View {
                     accountLabel(String(localized: "ChatGPT account"), detail: String(localized: "The ChatGPT sign-in page opens in the browser."), ok: false)
                 }
             }
-            Picker("Model", selection: $model.preferences.openAIModel) {
-                Text("Account default").tag("")
-                ForEach(model.accounts.chatGPTModels) { option in
-                    Text(verbatim: option.title).tag(option.id)
-                }
-            }
+            modelPicker($model.preferences.openAIModel, options: model.accounts.chatGPTModels, defaultTitle: String(localized: "Account default"))
         } else {
             keyField(for: .openAI, hasKey: model.accounts.hasOpenAIKey, prompt: "sk-…",
                      link: URL(string: "https://platform.openai.com/api-keys")!)
-            Picker("Model", selection: $model.preferences.openAIModel) {
-                Text("Default (GPT-6.1 Sol)").tag("")
-                ForEach(OpenAIModelOption.apiModels) { option in
-                    Text(option.title).tag(option.id)
-                }
-            }
+            modelPicker($model.preferences.openAIModel, options: ModelOption.openAIAPIModels, defaultTitle: String(localized: "Default (GPT-6.1 Sol)"))
         }
+        effortPicker($model.preferences.openAIEffort, levels: openAIEfforts ?? ModelEffort.openAIAPILevels)
     }
 
     // MARK: Building blocks
+
+    /// A model list as the provider gives it. A saved model missing from the list stays selectable.
+    @ViewBuilder
+    private func modelPicker(_ selection: Binding<String>, options: [ModelOption], defaultTitle: String? = nil) -> some View {
+        let chosen = selection.wrappedValue
+        Picker("Model", selection: selection) {
+            if let defaultTitle {
+                Text(verbatim: defaultTitle).tag("")
+            }
+            ForEach(options) { option in
+                Text(verbatim: option.title).tag(option.id)
+            }
+            if !chosen.isEmpty, !options.contains(where: { $0.id == chosen }) {
+                Text(verbatim: chosen).tag(chosen)
+            }
+        }
+        if let detail = options.first(where: { $0.id == chosen })?.detail, !detail.isEmpty {
+            Text(verbatim: detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// The effort levels the chosen model accepts; a model without effort gets none.
+    @ViewBuilder
+    private func effortPicker(_ selection: Binding<String>, levels: [String]) -> some View {
+        if levels.isEmpty {
+            LabeledContent("Effort") {
+                Text("This model has no effort setting").foregroundStyle(.secondary)
+            }
+        } else {
+            let chosen = selection.wrappedValue
+            Picker("Effort", selection: selection) {
+                Text(ModelEffort.title(ModelEffort.automatic)).tag(ModelEffort.automatic)
+                ForEach(levels, id: \.self) { level in
+                    Text(ModelEffort.title(level)).tag(level)
+                }
+                // A level the newly chosen model lacks is replaced by its nearest one when sent.
+                if chosen != ModelEffort.automatic, !levels.contains(chosen) {
+                    Text(ModelEffort.title(chosen)).tag(chosen)
+                }
+            }
+            footnote("Automatic: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.")
+        }
+    }
 
     private func accountLabel(_ title: String, detail: String, ok: Bool) -> some View {
         HStack(spacing: 10) {
@@ -341,4 +398,9 @@ struct PreferencesView: View {
         }
         .joined(separator: ", ")
     }
+}
+
+private extension Array {
+    /// The array, or nil when it is empty, for falling back with `??`.
+    var nonEmpty: Self? { isEmpty ? nil : self }
 }

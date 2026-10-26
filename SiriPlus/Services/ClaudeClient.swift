@@ -78,7 +78,8 @@ struct ClaudeMessagesRequest: Encodable, Sendable {
     let maxTokens: Int
     let system: [ContentBlock]
     let messages: [Message]
-    let outputConfig: OutputConfig
+    /// Nil for a model that takes no effort.
+    let outputConfig: OutputConfig?
     var fallbacks: String?
     var stream = true
 
@@ -153,9 +154,35 @@ struct ClaudeClient: Sendable {
     static let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
     static let apiVersion = "2026-10-21"
     static let fallbackBeta = "server-side-fallback-2026-07-01"
+    static let modelsEndpoint = URL(string: "https://api.anthropic.com/v1/models?limit=1000")!
 
     let apiKey: String
     var session: URLSession = .shared
+
+    /// Models the key can use, newest first, with the effort levels each accepts.
+    func models() async throws -> [ModelOption] {
+        var request = URLRequest(url: Self.modelsEndpoint)
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue(Self.apiVersion, forHTTPHeaderField: "anthropic-version")
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 else { throw ClaudeError.http(status: status, message: Self.errorMessage(from: data)) }
+        return try Self.parseModels(data)
+    }
+
+    static func parseModels(_ data: Data) throws -> [ModelOption] {
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let list = object["data"] as? [[String: Any]] else { throw ClaudeError.invalidResponse }
+        return list.compactMap { model in
+            guard let id = model["id"] as? String else { return nil }
+            var efforts: [String]?
+            if let effort = (model["capabilities"] as? [String: Any])?["effort"] as? [String: Any] {
+                let supported = { (value: Any?) in (value as? [String: Any])?["supported"] as? Bool == true }
+                efforts = supported(effort) ? ModelEffort.order.filter { supported(effort[$0]) } : []
+            }
+            return ModelOption(id: id, title: model["display_name"] as? String ?? id, efforts: efforts)
+        }
+    }
 
     /// Streams text deltas of the reply.
     func streamText(_ body: ClaudeMessagesRequest) -> AsyncThrowingStream<String, Error> {
@@ -246,8 +273,8 @@ struct ClaudeAPIBackend: ModelBackend {
             maxTokens: prompt.maxTokens,
             system: [.text(prompt.system, cached: prompt.cacheSystem)],
             messages: messages,
-            outputConfig: .init(effort: prompt.effort),
-            fallbacks: ClaudeModel(rawValue: model)?.supportsDefaultFallback == true ? "default" : nil
+            outputConfig: prompt.effort.map { .init(effort: $0) },
+            fallbacks: ModelOption.claudeFallbackModels.contains(model) ? "default" : nil
         )
     }
 }

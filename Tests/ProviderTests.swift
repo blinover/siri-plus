@@ -69,10 +69,95 @@ struct PromptTests {
             }
             return text
         }
-        #expect(try await run(ModelSelection(provider: .claude, claudeModel: .sonnet, claudeAuth: .account)) == "claudeCode:sonnet")
-        #expect(try await run(ModelSelection(provider: .claude, claudeModel: .sonnet, claudeAuth: .apiKey)) == "claudeAPI:claude-sonnet-5-5")
+        #expect(try await run(ModelSelection(provider: .claude, claudeModel: "sonnet", claudeAuth: .account)) == "claudeCode:sonnet")
+        #expect(try await run(ModelSelection(provider: .claude, claudeModel: "claude-sonnet-5-5", claudeAuth: .apiKey)) == "claudeAPI:claude-sonnet-5-5")
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-6-luna", openAIAuth: .apiKey)) == "openAIAPI:gpt-6-luna")
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-x", openAIAuth: .account)) == "chatGPT:gpt-x")
+    }
+
+    @Test func effortFollowsSettingsAndWhatTheModelAccepts() async throws {
+        let backend = RecordingBackend(name: "claudeCode", reportsEffort: true)
+        let catalog = ModelCatalog()
+        catalog.update([
+            ModelOption(id: "opus", title: "Opus 5.5", efforts: ModelEffort.claudeLevels),
+            ModelOption(id: "claude-opus-4-6", title: "Opus 4.6", efforts: ["low", "medium", "high", "max"]),
+            ModelOption(id: "claude-haiku-4-5", title: "Haiku 4.5", efforts: []),
+        ], for: .claudeCode)
+        let service = CloudAssistantService(claudeAPI: backend, claudeCode: backend, openAIAPI: backend, chatGPT: backend, catalog: catalog)
+        func collect(_ stream: AsyncThrowingStream<String, Error>) async throws -> String {
+            var text = ""
+            for try await part in stream { text += part }
+            return text
+        }
+        func chat(_ model: String, effort: String, style: ReplyStyle = .brief) async throws -> String {
+            let selection = ModelSelection(claudeModel: model, claudeEffort: effort)
+            return try await collect(service.reply(to: AssistantRequest(messages: [ChatMessage(role: .user, text: "?")], replyStyle: style, selection: selection)))
+        }
+        func hint(_ model: String, effort: String) async throws -> String {
+            let request = HintRequest(trigger: .manual, transcript: "", notes: "", previousHints: [], selection: ModelSelection(claudeModel: model, claudeEffort: effort))
+            return try await collect(service.hint(for: request))
+        }
+        #expect(try await chat("opus", effort: ModelEffort.automatic) == "claudeCode:opus:low")
+        #expect(try await chat("opus", effort: ModelEffort.automatic, style: .detailed) == "claudeCode:opus:medium")
+        #expect(try await chat("opus", effort: "max") == "claudeCode:opus:max")
+        // Hints stay quick whatever is chosen.
+        #expect(try await hint("opus", effort: "max") == "claudeCode:opus:low")
+        // Opus 4.6 has no xhigh: the nearest lighter level is sent.
+        #expect(try await chat("claude-opus-4-6", effort: "xhigh") == "claudeCode:claude-opus-4-6:high")
+        // A model without effort gets none; an unlisted model gets the level as is.
+        #expect(try await chat("claude-haiku-4-5", effort: "high") == "claudeCode:claude-haiku-4-5:none")
+        #expect(try await chat("claude-new", effort: "xhigh") == "claudeCode:claude-new:xhigh")
+    }
+
+    @Test func effortResolutionPicksTheNearestSupportedLevel() {
+        #expect(ModelEffort.resolve(chosen: "auto", preferred: "medium", isLive: false, supported: ["low", "high"]) == "low")
+        #expect(ModelEffort.resolve(chosen: "max", preferred: "low", isLive: false, supported: ["minimal", "low", "medium", "high"]) == "high")
+        #expect(ModelEffort.resolve(chosen: "max", preferred: "low", isLive: true, supported: ["minimal", "low"]) == "low")
+        #expect(ModelEffort.resolve(chosen: "high", preferred: "low", isLive: false, supported: []) == nil)
+        #expect(ModelEffort.resolve(chosen: "high", preferred: "low", isLive: false, supported: nil) == "high")
+    }
+}
+
+@Suite
+struct ModelListTests {
+    @Test func claudeCodeListsItsModelsWithEfforts() throws {
+        let line = #"{"type":"control_response","response":{"subtype":"success","request_id":"siriplus-models","response":{"models":[{"value":"default","displayName":"Default (recommended)","description":"Opus 5.5 · Best for everyday, complex tasks","supportsEffort":true,"supportedEffortLevels":["low","medium","high","xhigh","max"]},{"value":"claude-opus-4-6","displayName":"Opus 4.6","supportsEffort":true,"supportedEffortLevels":["low","medium","high","max"]},{"value":"claude-haiku-4-5-20251001","displayName":"Haiku 4.5"},{"value":"default","displayName":"Duplicate"}]}}}"#
+        let models = try #require(try ClaudeCodeBackend.parseModels(controlResponse: line))
+        #expect(models.map(\.id) == ["default", "claude-opus-4-6", "claude-haiku-4-5-20251001"])
+        #expect(models[0].title == "Default (recommended)")
+        #expect(models[0].detail == "Opus 5.5 · Best for everyday, complex tasks")
+        #expect(models[1].efforts == ["low", "medium", "high", "max"])
+        #expect(models[2].efforts == [])
+        #expect(try ClaudeCodeBackend.parseModels(controlResponse: #"{"type":"system","subtype":"init"}"#) == nil)
+        #expect(throws: ClaudeCodeError.failed("Not logged in")) {
+            try ClaudeCodeBackend.parseModels(controlResponse: #"{"type":"control_response","response":{"subtype":"error","request_id":"siriplus-models","error":"Not logged in"}}"#)
+        }
+    }
+
+    @Test func claudeAPIListsModelsWithEffortCapabilities() throws {
+        let data = Data(#"""
+        {"data":[
+          {"id":"claude-opus-5-5","display_name":"Claude Opus 5.5","capabilities":{"effort":{"supported":true,"low":{"supported":true},"medium":{"supported":true},"high":{"supported":true},"xhigh":{"supported":true},"max":{"supported":true}}}},
+          {"id":"claude-haiku-4-5","display_name":"Claude Haiku 4.5","capabilities":{"effort":{"supported":false,"low":{"supported":false}}}},
+          {"id":"claude-old","display_name":"Old"}
+        ],"has_more":false}
+        """#.utf8)
+        let models = try ClaudeClient.parseModels(data)
+        #expect(models.map(\.title) == ["Claude Opus 5.5", "Claude Haiku 4.5", "Old"])
+        #expect(models[0].efforts == ModelEffort.claudeLevels)
+        #expect(models[1].efforts == [])
+        #expect(models[2].efforts == nil)
+    }
+
+    @Test func chatGPTListsVisibleModelsWithReasoningLevels() {
+        let models = ChatGPTAccount.parseModels([
+            ["slug": "gpt-x", "display_name": "GPT X", "supported_reasoning_levels": [["effort": "low"], ["effort": "medium"], ["effort": "xhigh"]]],
+            ["slug": "gpt-hidden", "visibility": "hide"],
+            ["slug": "gpt-plain"],
+        ])
+        #expect(models.map(\.id) == ["gpt-x", "gpt-plain"])
+        #expect(models[0].efforts == ["low", "medium", "xhigh"])
+        #expect(models[1].efforts == nil)
     }
 }
 
@@ -110,7 +195,7 @@ struct ClaudeAPITests {
 
     @Test func hintRequestUsesCachedSystemPromptAndFallback() throws {
         let prompt = AssistantPrompts.hint(HintRequest(trigger: .topic, transcript: "", notes: "Цена", previousHints: [], selection: ModelSelection()))
-        let opus = try json(ClaudeAPIBackend.body(for: prompt, model: ClaudeModel.opus.rawValue))
+        let opus = try json(ClaudeAPIBackend.body(for: prompt, model: "claude-opus-5-5"))
         #expect(opus["model"] as? String == "claude-opus-5-5")
         #expect(opus["stream"] as? Bool == true)
         #expect(opus["fallbacks"] as? String == "default")
@@ -119,8 +204,12 @@ struct ClaudeAPITests {
         let system = try #require(opus["system"] as? [[String: Any]])
         #expect((system[0]["cache_control"] as? [String: Any])?["type"] as? String == "ephemeral")
 
-        let haiku = try json(ClaudeAPIBackend.body(for: prompt, model: ClaudeModel.haiku.rawValue))
+        let haiku = try json(ClaudeAPIBackend.body(for: prompt, model: "claude-haiku-5-5"))
         #expect(haiku["fallbacks"] == nil)
+
+        var noEffort = prompt
+        noEffort.effort = nil
+        #expect(try json(ClaudeAPIBackend.body(for: noEffort, model: "claude-haiku-4-5"))["output_config"] == nil)
     }
 }
 
@@ -176,6 +265,8 @@ struct ClaudeCodeTests {
         #expect(arguments[arguments.firstIndex(of: "--tools")! + 1] == "")
         #expect(arguments[arguments.firstIndex(of: "--model")! + 1] == "haiku")
         #expect(arguments[arguments.firstIndex(of: "--system-prompt-file")! + 1] == "/tmp/p.txt")
+        #expect(arguments[arguments.firstIndex(of: "--effort")! + 1] == "low")
+        #expect(!ClaudeCodeBackend.arguments(model: "haiku", effort: nil, systemPromptFile: "/tmp/p.txt").contains("--effort"))
     }
 }
 
@@ -224,6 +315,10 @@ struct OpenAITests {
         #expect(first.map { $0["type"] as? String } == ["input_image", "input_text"])
         #expect(first[0]["image_url"] as? String == "data:image/jpeg;base64,AQ==")
         #expect((input[1]["content"] as? [[String: Any]])?.first?["type"] as? String == "output_text")
+
+        var noEffort = prompt
+        noEffort.effort = nil
+        #expect(try json(ResponsesRequest(prompt: noEffort, model: "gpt-plain"))["reasoning"] == nil)
     }
 
     @Test func tokensExposeAccountAndExpiry() throws {
@@ -260,13 +355,14 @@ private func json(_ value: some Encodable) throws -> [String: Any] {
     try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(value)) as? [String: Any])
 }
 
-/// Answers with its name and the model it was asked for.
+/// Answers with its name, the model it was asked for and, when asked, the effort it got.
 private struct RecordingBackend: ModelBackend {
     let name: String
+    var reportsEffort = false
 
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            continuation.yield("\(name):\(model)")
+            continuation.yield(reportsEffort ? "\(name):\(model):\(prompt.effort ?? "none")" : "\(name):\(model)")
             continuation.finish()
         }
     }
