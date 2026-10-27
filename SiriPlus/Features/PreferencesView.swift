@@ -62,6 +62,8 @@ struct PreferencesView: View {
             }
             Toggle("Recognize my voice too (microphone)", isOn: $model.preferences.capturesMicrophone)
             Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
+            Toggle("Hide Siri+ panels from screen sharing and screenshots", isOn: $model.preferences.hidesPanelsFromCapture)
+                .help("Turn off to take screenshots or record the hint panel. While it is off, people you share your screen with see the hints too.")
                 .help("A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.")
             Picker("Keep chats and meetings", selection: $model.preferences.historyRetentionDays) {
                 Text("Forever").tag(0)

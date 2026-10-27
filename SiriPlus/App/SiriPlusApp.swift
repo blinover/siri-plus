@@ -7,6 +7,7 @@ struct SiriPlusApp: App {
     @State private var overlay: HintOverlay
     @State private var callPrompt: CallPrompt
     @State private var updatePrompt: UpdatePrompt
+    @State private var meetingStatus: MeetingStatusItem
 
     init() {
         let model = AppModel()
@@ -17,6 +18,7 @@ struct SiriPlusApp: App {
         _callPrompt = State(initialValue: CallPrompt(monitor: model.callMonitor))
         model.callMonitor.start()
         _updatePrompt = State(initialValue: UpdatePrompt(updates: model.updates))
+        _meetingStatus = State(initialValue: MeetingStatusItem(meeting: model.meeting, overlay: overlay))
         model.updates.start()
         Task { await model.refreshAccounts() }
         model.usage.start { (model.accounts.claudeCode.signedIn, model.accounts.chatGPTEmail != nil) }
@@ -26,9 +28,7 @@ struct SiriPlusApp: App {
                 overlay.show()
                 if !model.voice.isListening { Task { await model.toggleDictation() } }
             case "meeting":
-                model.selectedTab = .meeting
-                overlay.showMainWindow()
-                Task { await model.meeting.start() }
+                Task { await startMeeting(model: model, overlay: overlay) }
             case "updates":
                 Task { await model.updates.check(userInitiated: true) }
             case "settings":
@@ -51,19 +51,30 @@ struct SiriPlusApp: App {
         MenuBarExtra {
             AssistantMenu(model: model, meeting: model.meeting, overlay: overlay)
         } label: {
-            MenuBarLabel(isRecording: model.meeting.isRunning, overlay: overlay)
+            MenuBarLabel(overlay: overlay)
         }
     }
 }
 
+/// Starts a meeting without opening the window: the red record mark in the menu bar shows it is on.
+/// The window opens only when starting fails, to show why.
+@MainActor
+private func startMeeting(model: AppModel, overlay: HintOverlay) async {
+    model.meeting.refreshSources()
+    await model.meeting.start()
+    if model.meeting.phase == .idle, model.meeting.errorMessage != nil {
+        model.selectedTab = .meeting
+        overlay.showMainWindow()
+    }
+}
+
 private struct MenuBarLabel: View {
-    let isRecording: Bool
     let overlay: HintOverlay
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Image(systemName: isRecording ? "waveform.circle.fill" : "sparkles")
-            .accessibilityLabel(isRecording ? String(localized: "Siri+ is listening to the meeting") : "Siri+")
+        Image(systemName: "sparkles")
+            .accessibilityLabel("Siri+")
             .onAppear {
                 // The label lives as long as the app, so the shortcut can always open the window.
                 overlay.openMainWindow = { openWindow(id: "assistant") }
@@ -93,12 +104,7 @@ private struct AssistantMenu: View {
         switch meeting.phase {
         case .idle:
             Button("Start Meeting") {
-                afterMenuCloses {
-                    model.selectedTab = .meeting
-                    showWindow()
-                    meeting.refreshSources()
-                    Task { await meeting.start() }
-                }
+                afterMenuCloses { Task { await startMeeting(model: model, overlay: overlay) } }
             }
         case .starting:
             Text("Preparing speech recognition…")

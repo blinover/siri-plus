@@ -4,6 +4,16 @@ import Testing
 
 @Suite @MainActor
 struct AppModelTests {
+    @Test func panelsFollowTheScreenCaptureSetting() {
+        let model = makeModel()
+        #expect(PanelCapture.isHidden)
+        model.preferences.hidesPanelsFromCapture = false
+        #expect(!PanelCapture.isHidden)
+        model.preferences.hidesPanelsFromCapture = true
+        #expect(PanelCapture.isHidden)
+        #expect(AssistantPreferences().hidesPanelsFromCapture)
+    }
+
     @Test func clearedConversationDiscardsLateResponse() async throws {
         let service = ControlledAssistant()
         let model = makeModel(assistant: service)

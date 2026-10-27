@@ -196,6 +196,19 @@ struct MeetingModelTests {
         #expect(!meeting.playsAloud)
     }
 
+    @Test func menuBarTimerShowsMinutesThenHours() async {
+        #expect(MeetingModel.elapsedText(0) == "0:00")
+        #expect(MeetingModel.elapsedText(245.9) == "4:05")
+        #expect(MeetingModel.elapsedText(3_723) == "1:02:03")
+        #expect(MeetingModel.elapsedText(-5) == "0:00")
+
+        let (meeting, _, _) = makeMeeting()
+        await meeting.start()
+        #expect(meeting.recordingSince != nil)
+        await meeting.stop()
+        #expect(meeting.recordingSince == nil)
+    }
+
     @Test func failedStartShowsErrorAndStaysIdle() async {
         let (meeting, service, _) = makeMeeting()
         service.startError = MeetingError.microphoneDenied

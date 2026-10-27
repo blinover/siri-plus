@@ -55,6 +55,8 @@ final class MeetingModel: ObservableObject {
     @Published private(set) var levels: [Speaker: Float] = [:]
     /// The call plays through speakers: the microphone hears the other side, and the transcript drops it as echo.
     @Published private(set) var playsAloud = false
+    /// When the running meeting started, for the menu bar timer.
+    private(set) var recordingSince: Date?
     @Published private(set) var sources: [MeetingAudioSource] = [.system]
     @Published var selectedSourceID = MeetingAudioSource.system.id
     @Published var notes = ""
@@ -113,6 +115,7 @@ final class MeetingModel: ObservableObject {
         wordsAtLastHint = 0
         lastHintAt = Date()
         let startedAt = Date()
+        recordingSince = startedAt
 
         do {
             let events = try await service.start(MeetingConfiguration(
@@ -146,6 +149,7 @@ final class MeetingModel: ObservableObject {
 
     func stop() async {
         guard phase != .idle else { return }
+        recordingSince = nil
         phase = .idle
         questionTask?.cancel()
         questionTask = nil
@@ -170,6 +174,15 @@ final class MeetingModel: ObservableObject {
     }
 
     var transcriptText: String { transcript.recentText(characterLimit: .max, label: \.title) }
+
+    /// "4:05" under an hour, "1:02:03" after.
+    static func elapsedText(_ seconds: TimeInterval) -> String {
+        let total = max(Int(seconds), 0)
+        let (hours, minutes, secs) = (total / 3_600, total % 3_600 / 60, total % 60)
+        return hours > 0
+            ? String(format: "%d:%02d:%02d", hours, minutes, secs)
+            : String(format: "%d:%02d", minutes, secs)
+    }
 
     private func archive(startedAt: Date) {
         // A meeting started again before the old stream ended has already replaced the transcript.

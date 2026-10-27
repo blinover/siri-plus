@@ -216,8 +216,8 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        // Keep hints out of screen sharing and recordings.
-        panel.sharingType = .none
+        // Keep hints out of screen sharing and recordings, unless Settings allow it.
+        PanelCapture.register(panel)
         panel.delegate = self
         let hosting = NSHostingView(rootView: SidePanelView(model: model, meeting: meeting, voice: model.voice, overlay: self))
         // The overlay sizes the window from the card's height; the hosting view must not resize it too.

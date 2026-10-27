@@ -63,8 +63,8 @@ final class CallPrompt {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        // The other participants should not see the assistant in a shared screen.
-        panel.sharingType = .none
+        // The other participants should not see the assistant in a shared screen, unless Settings allow it.
+        PanelCapture.register(panel)
         return panel
     }
 }

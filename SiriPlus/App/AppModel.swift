@@ -1,6 +1,22 @@
 import AppKit
 import Combine
 
+/// Whether Siri+ panels show up in screen sharing, recordings and screenshots, as chosen in Settings.
+/// Hidden by default, so the other side of a call never sees the hints.
+@MainActor
+enum PanelCapture {
+    static var isHidden = true {
+        didSet { for window in windows.allObjects { window.sharingType = sharingType } }
+    }
+    private static var sharingType: NSWindow.SharingType { isHidden ? .none : .readOnly }
+    private static let windows = NSHashTable<NSWindow>.weakObjects()
+
+    static func register(_ window: NSWindow) {
+        windows.add(window)
+        window.sharingType = sharingType
+    }
+}
+
 /// Chat and Meeting each keep their own history inside the tab.
 enum WorkspaceTab: String, CaseIterable, Identifiable {
     case chat
@@ -67,6 +83,7 @@ final class AppModel: ObservableObject {
     @Published var preferences: AssistantPreferences {
         didSet {
             preferencesStore.save(preferences)
+            PanelCapture.isHidden = preferences.hidesPanelsFromCapture
             if preferences.historyRetentionDays != oldValue.historyRetentionDays {
                 history.removeExpired()
                 chats.removeExpired()
@@ -139,6 +156,7 @@ final class AppModel: ObservableObject {
         self.credentials = credentials
         let preferences = preferencesStore.load()
         self.preferences = preferences
+        PanelCapture.isHidden = preferences.hidesPanelsFromCapture
         var currentPreferences: () -> AssistantPreferences = { preferences }
         meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming) {
             currentPreferences()

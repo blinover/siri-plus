@@ -119,6 +119,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var historyRetentionDays = 0
     /// Offers to start a meeting when a call app starts recording, and to stop it when the call ends.
     var offersMeetingStart = true
+    /// Siri+ panels stay out of screen sharing, recordings and screenshots.
+    var hidesPanelsFromCapture = true
     /// Looks for new versions on GitHub at launch and twice a day.
     var checksForUpdates = true
     /// ⌃⌥Space opens the panel already listening, as Siri does.
@@ -140,6 +142,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         capturesMicrophone: Bool = true,
         historyRetentionDays: Int = 0,
         offersMeetingStart: Bool = true,
+        hidesPanelsFromCapture: Bool = true,
         checksForUpdates: Bool = true,
         dictatesOnShortcut: Bool = true
     ) {
@@ -158,6 +161,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.capturesMicrophone = capturesMicrophone
         self.historyRetentionDays = historyRetentionDays
         self.offersMeetingStart = offersMeetingStart
+        self.hidesPanelsFromCapture = hidesPanelsFromCapture
         self.checksForUpdates = checksForUpdates
         self.dictatesOnShortcut = dictatesOnShortcut
     }
@@ -184,6 +188,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
         historyRetentionDays = try container.decodeIfPresent(Int.self, forKey: .historyRetentionDays) ?? defaults.historyRetentionDays
         offersMeetingStart = try container.decodeIfPresent(Bool.self, forKey: .offersMeetingStart) ?? defaults.offersMeetingStart
+        hidesPanelsFromCapture = try container.decodeIfPresent(Bool.self, forKey: .hidesPanelsFromCapture) ?? defaults.hidesPanelsFromCapture
         checksForUpdates = try container.decodeIfPresent(Bool.self, forKey: .checksForUpdates) ?? defaults.checksForUpdates
         dictatesOnShortcut = try container.decodeIfPresent(Bool.self, forKey: .dictatesOnShortcut) ?? defaults.dictatesOnShortcut
     }

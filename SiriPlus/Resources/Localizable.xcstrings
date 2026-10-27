@@ -975,6 +975,16 @@
         }
       }
     },
+    "Hide Siri+ panels from screen sharing and screenshots": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скрывать панели Siri+ при демонстрации экрана и на скриншотах"
+          }
+        }
+      }
+    },
     "High": {
       "localizations": {
         "ru": {
@@ -2671,6 +2681,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расшифровка речи из этого файла, распознана автоматически (%@):"
+          }
+        }
+      }
+    },
+    "Turn off to take screenshots or record the hint panel. While it is off, people you share your screen with see the hints too.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключите, чтобы снять скриншот или запись панели подсказок. Пока настройка выключена, подсказки видят и те, кому вы показываете экран."
           }
         }
       }
